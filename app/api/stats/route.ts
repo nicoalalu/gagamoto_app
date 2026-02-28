@@ -16,11 +16,12 @@ export async function GET() {
   ]);
 
   const totalPlayed = playedMatches.length;
-  const wins = playedMatches.filter(m => m.goalsFor! > m.goalsAgainst!).length;
-  const draws = playedMatches.filter(m => m.goalsFor === m.goalsAgainst).length;
+  type PlayedMatch = typeof playedMatches[number];
+  const wins = playedMatches.filter((m: PlayedMatch) => m.goalsFor! > m.goalsAgainst!).length;
+  const draws = playedMatches.filter((m: PlayedMatch) => m.goalsFor === m.goalsAgainst).length;
   const losses = totalPlayed - wins - draws;
-  const goalsFor = playedMatches.reduce((s, m) => s + (m.goalsFor ?? 0), 0);
-  const goalsAgainst = playedMatches.reduce((s, m) => s + (m.goalsAgainst ?? 0), 0);
+  const goalsFor = playedMatches.reduce((s: number, m: PlayedMatch) => s + (m.goalsFor ?? 0), 0);
+  const goalsAgainst = playedMatches.reduce((s: number, m: PlayedMatch) => s + (m.goalsAgainst ?? 0), 0);
 
   const playerStats = users.map(user => {
     const userGoals = goals.filter(g => g.userId === user.id).length;

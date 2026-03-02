@@ -16,7 +16,9 @@ export default function AdminTorneoPage() {
 
   const [selectedTorneoId, setSelectedTorneoId] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [fileName, setFileName] = useState("");
   const [importMsg, setImportMsg] = useState("");
+  const [importError, setImportError] = useState("");
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -51,8 +53,10 @@ export default function AdminTorneoPage() {
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => setCsvText((ev.target?.result as string) ?? "");
+    reader.onerror = () => setImportError("No se pudo leer el archivo");
     reader.readAsText(file);
   }
 
@@ -61,6 +65,7 @@ export default function AdminTorneoPage() {
     if (!csvText || !selectedTorneoId) return;
     setImporting(true);
     setImportMsg("");
+    setImportError("");
     try {
       const res = await fetch("/api/partidos/import", {
         method: "POST",
@@ -71,13 +76,16 @@ export default function AdminTorneoPage() {
       if (res.ok) {
         setImportMsg(`✅ ${data.created} partidos importados`);
         setCsvText("");
+        setFileName("");
         if (fileRef.current) fileRef.current.value = "";
       } else {
         setImportMsg(`❌ ${data.error || "Error al importar"}`);
+        setImportError(JSON.stringify(data, null, 2));
       }
     } catch (err) {
       console.error(err);
       setImportMsg("❌ Error de conexión al importar");
+      setImportError(err instanceof Error ? err.message : String(err));
     } finally {
       setImporting(false);
     }
@@ -165,13 +173,26 @@ export default function AdminTorneoPage() {
           </div>
           <div>
             <label className="text-xs font-bold text-zinc-500">Archivo CSV</label>
+            {/* Input oculto — se abre con el botón de abajo para evitar bugs de foco en macOS */}
             <input
               ref={fileRef}
               type="file"
               accept=".csv,text/csv"
               onChange={onFileChange}
-              className="w-full mt-1 text-sm"
+              className="hidden"
             />
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="px-3 py-2 border-2 border-black rounded-lg text-sm font-semibold bg-white hover:bg-zinc-100 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
+              >
+                Elegir archivo
+              </button>
+              <span className="text-sm text-zinc-500 truncate max-w-[220px]">
+                {fileName || "Ningún archivo seleccionado"}
+              </span>
+            </div>
           </div>
           {csvText && (
             <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-xs font-mono overflow-x-auto max-h-40">
@@ -181,11 +202,20 @@ export default function AdminTorneoPage() {
           <button
             type="submit"
             disabled={importing || !csvText || !selectedTorneoId}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] transition-colors text-sm disabled:opacity-50"
+            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] transition-colors text-sm disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px]"
           >
-            {importing ? "Importando..." : "Importar partidos"}
+            {importing ? "⏳ Importando..." : "Importar partidos"}
           </button>
-          {importMsg && <p className="text-sm">{importMsg}</p>}
+          {importMsg && (
+            <p className={`text-sm font-medium ${importMsg.startsWith("✅") ? "text-green-700" : "text-red-700"}`}>
+              {importMsg}
+            </p>
+          )}
+          {importError && (
+            <pre className="bg-red-50 border border-red-300 rounded-lg p-3 text-xs text-red-800 overflow-x-auto whitespace-pre-wrap">
+              {importError}
+            </pre>
+          )}
         </form>
       </div>
 

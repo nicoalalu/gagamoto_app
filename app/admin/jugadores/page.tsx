@@ -15,8 +15,10 @@ export default function AdminJugadoresPage() {
   const [addMsg, setAddMsg] = useState("");
 
   const [csvText, setCsvText] = useState("");
+  const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState("");
+  const [importError, setImportError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadJugadores() {
@@ -51,8 +53,10 @@ export default function AdminJugadoresPage() {
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => setCsvText((ev.target?.result as string) ?? "");
+    reader.onerror = () => setImportError("No se pudo leer el archivo");
     reader.readAsText(file);
   }
 
@@ -61,21 +65,31 @@ export default function AdminJugadoresPage() {
     if (!csvText) return;
     setImporting(true);
     setImportMsg("");
-    const res = await fetch("/api/jugadores/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ csv: csvText }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setImportMsg(`✅ ${data.created} jugadores importados/actualizados`);
-      setCsvText("");
-      if (fileRef.current) fileRef.current.value = "";
-      await loadJugadores();
-    } else {
-      setImportMsg("❌ Error al importar");
+    setImportError("");
+    try {
+      const res = await fetch("/api/jugadores/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: csvText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImportMsg(`✅ ${data.created} jugadores importados/actualizados`);
+        setCsvText("");
+        setFileName("");
+        if (fileRef.current) fileRef.current.value = "";
+        await loadJugadores();
+      } else {
+        setImportMsg(`❌ ${data.error || "Error al importar"}`);
+        setImportError(JSON.stringify(data, null, 2));
+      }
+    } catch (err) {
+      console.error(err);
+      setImportMsg("❌ Error de conexión al importar");
+      setImportError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setImporting(false);
     }
-    setImporting(false);
   }
 
   return (
@@ -141,21 +155,43 @@ export default function AdminJugadoresPage() {
           Columnas: <code>Nombre, Apellido, Numero_de_camiseta</code>
         </p>
         <form onSubmit={importarJugadores} className="space-y-3">
+          {/* Input oculto — se abre con el botón de abajo para evitar bugs de foco en macOS */}
           <input
             ref={fileRef}
             type="file"
             accept=".csv,text/csv"
             onChange={onFileChange}
-            className="w-full text-sm"
+            className="hidden"
           />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="px-3 py-2 border-2 border-black rounded-lg text-sm font-semibold bg-white hover:bg-zinc-100 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
+            >
+              Elegir archivo
+            </button>
+            <span className="text-sm text-zinc-500 truncate max-w-[220px]">
+              {fileName || "Ningún archivo seleccionado"}
+            </span>
+          </div>
           <button
             type="submit"
             disabled={importing || !csvText}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] text-sm disabled:opacity-50"
+            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] text-sm disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
           >
-            {importing ? "Importando..." : "Importar"}
+            {importing ? "⏳ Importando..." : "Importar"}
           </button>
-          {importMsg && <p className="text-sm">{importMsg}</p>}
+          {importMsg && (
+            <p className={`text-sm font-medium ${importMsg.startsWith("✅") ? "text-green-700" : "text-red-700"}`}>
+              {importMsg}
+            </p>
+          )}
+          {importError && (
+            <pre className="bg-red-50 border border-red-300 rounded-lg p-3 text-xs text-red-800 overflow-x-auto whitespace-pre-wrap">
+              {importError}
+            </pre>
+          )}
         </form>
       </div>
 

@@ -5,19 +5,19 @@ import { Trophy } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="bg-yellow-400 border-4 border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-10 flex flex-col items-center gap-6 max-w-sm w-full">
+    <div className="min-h-screen bg-[#EEF3FF] flex items-center justify-center p-4">
+      <div className="bg-[#0048FF] border-4 border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-10 flex flex-col items-center gap-6 max-w-sm w-full">
         <div className="flex flex-col items-center gap-2">
-          <Trophy size={56} className="text-black" />
-          <h1 className="text-4xl font-black text-black tracking-tight">Gagamoto</h1>
-          <p className="text-black/70 font-medium text-center text-sm">
+          <Trophy size={56} className="text-white" />
+          <h1 className="text-4xl font-black text-white tracking-tight">Gagamoto</h1>
+          <p className="text-white/70 font-medium text-center text-sm">
             Gestor interno del equipo
           </p>
         </div>
 
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center gap-3 bg-black text-yellow-400 font-bold py-3 px-6 rounded-xl border-2 border-black hover:bg-zinc-800 transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-3 bg-white text-[#0048FF] font-bold py-3 px-6 rounded-xl border-2 border-black hover:bg-[#EEF3FF] transition-colors text-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -40,7 +40,7 @@ export default function LoginPage() {
           Ingresar con Google
         </button>
 
-        <p className="text-xs text-black/50 text-center">
+        <p className="text-xs text-white/60 text-center">
           Solo miembros del equipo pueden acceder
         </p>
       </div>

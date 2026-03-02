@@ -61,20 +61,26 @@ export default function AdminTorneoPage() {
     if (!csvText || !selectedTorneoId) return;
     setImporting(true);
     setImportMsg("");
-    const res = await fetch("/api/partidos/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ torneoId: selectedTorneoId, csv: csvText }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setImportMsg(`✅ ${data.created} partidos importados`);
-      setCsvText("");
-      if (fileRef.current) fileRef.current.value = "";
-    } else {
-      setImportMsg(`❌ Error al importar`);
+    try {
+      const res = await fetch("/api/partidos/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ torneoId: selectedTorneoId, csv: csvText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImportMsg(`✅ ${data.created} partidos importados`);
+        setCsvText("");
+        if (fileRef.current) fileRef.current.value = "";
+      } else {
+        setImportMsg(`❌ ${data.error || "Error al importar"}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setImportMsg("❌ Error de conexión al importar");
+    } finally {
+      setImporting(false);
     }
-    setImporting(false);
   }
 
   return (

@@ -118,7 +118,3 @@ export default function AsistenciaBanner({ partidoId, rival, fecha, lugar }: Pro
     </div>
   );
 }
-
-    </div>
-  );
-}

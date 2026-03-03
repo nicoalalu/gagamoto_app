@@ -26,8 +26,10 @@ export default async function RootLayout({
     <html lang="es">
       <body className={`${geist.variable} font-sans antialiased bg-zinc-50 text-black`}>
         <Providers>
-          {session && <Navbar />}
-          <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+          <div className="max-w-5xl mx-auto px-4">
+            {session && <Navbar />}
+            <main className="py-6">{children}</main>
+          </div>
         </Providers>
       </body>
     </html>

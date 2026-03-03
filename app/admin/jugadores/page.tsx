@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Upload, Camera } from "lucide-react";
 import Image from "next/image";
+import { upload } from "@vercel/blob/client";
 
 type Jugador = { id: string; nombre: string; apellido: string; numeroCamiseta: number | null; fotografia: string | null };
 
@@ -100,17 +101,16 @@ export default function AdminJugadoresPage() {
     setUploadingId(jugadorId);
     setUploadError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`/api/jugadores/${jugadorId}/foto`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (res.ok) {
-        setJugadores((prev) => prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: data.fotografia } : j)));
-      } else {
-        setUploadError(`Error al subir foto: ${data.error ?? res.statusText}`);
-      }
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const blob = await upload(`jugadores/${jugadorId}.${ext}`, file, {
+        access: "public",
+        handleUploadUrl: `/api/jugadores/${jugadorId}/foto`,
+      });
+      setJugadores((prev) =>
+        prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: blob.url } : j))
+      );
     } catch (err) {
-      setUploadError(`Error de red: ${err instanceof Error ? err.message : String(err)}`);
+      setUploadError(`Error al subir foto: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setUploadingId(null);
     }

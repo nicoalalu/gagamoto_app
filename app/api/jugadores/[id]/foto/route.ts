@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { put, del } from "@vercel/blob";
+import { del } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,33 +12,43 @@ export async function POST(req: Request, { params }: Params) {
 
   const { id } = await params;
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
-  if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
-
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const filename = `jugadores/${id}.${ext}`;
-
-  // Delete previous blob if exists
-  const jugador = await prisma.jugador.findUnique({ where: { id }, select: { fotografia: true } });
-  if (jugador?.fotografia) {
-    try { await del(jugador.fotografia); } catch {}
-  }
-
-  let blob;
+  let body: HandleUploadBody;
   try {
-    blob = await put(filename, file, { access: "public", allowOverwrite: true });
-  } catch (err) {
-    console.error("[foto/route] Error al subir a Vercel Blob:", err);
-    return NextResponse.json({ error: "Error al subir imagen al storage" }, { status: 500 });
+    body = await req.json() as HandleUploadBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const updated = await prisma.jugador.update({
-    where: { id },
-    data: { fotografia: blob.url },
-  });
+  try {
+    const jsonResponse = await handleUpload({
+      body,
+      request: req,
+      onBeforeGenerateToken: async () => ({
+        allowedContentTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"],
+        maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB
+      }),
+      onUploadCompleted: async ({ blob }) => {
+        // Pathname format: jugadores/{id}.{ext}
+        const jugadorId = blob.pathname.replace(/^jugadores\//, "").replace(/\.[^.]+$/, "");
 
-  return NextResponse.json(updated);
+        // Delete previous blob
+        const jugador = await prisma.jugador.findUnique({ where: { id: jugadorId }, select: { fotografia: true } });
+        if (jugador?.fotografia && jugador.fotografia !== blob.url) {
+          try { await del(jugador.fotografia); } catch {}
+        }
+
+        await prisma.jugador.update({
+          where: { id: jugadorId },
+          data: { fotografia: blob.url },
+        });
+      },
+    });
+
+    return NextResponse.json(jsonResponse);
+  } catch (err) {
+    console.error("[foto/route] handleUpload error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 400 });
+  }
 }
 
 export async function DELETE(_req: Request, { params }: Params) {

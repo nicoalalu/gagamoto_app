@@ -1,4 +1,4 @@
-export const GAGAMOTO = "Gagamoto";
+export const GAGAMOTO = "GAGAMOTO FC";
 
 export type Standing = {
   nombre: string;

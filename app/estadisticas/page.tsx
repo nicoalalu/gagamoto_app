@@ -1,10 +1,22 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
+import Image from "next/image";
 import { Trophy, Award, Calendar } from "lucide-react";
 import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
 
-function Initials({ nombre, apellido }: { nombre: string; apellido: string }) {
+function PlayerAvatar({ nombre, apellido, fotografia }: { nombre: string; apellido: string; fotografia?: string | null }) {
+  if (fotografia) {
+    return (
+      <Image
+        src={fotografia}
+        alt={`${nombre} ${apellido}`}
+        width={40}
+        height={40}
+        className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200"
+      />
+    );
+  }
   const ini = ((nombre[0] ?? "") + (apellido[0] ?? "")).toUpperCase();
   return (
     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 shrink-0 border border-gray-200">
@@ -69,7 +81,7 @@ export default async function EstadisticasPage({
   // ── Goles por jugador ────────────────────────────────────────────────────
   const golesMap: Record<
     string,
-    { jugador: { id: string; nombre: string; apellido: string }; count: number }
+    { jugador: { id: string; nombre: string; apellido: string; fotografia: string | null }; count: number }
   > = {};
   for (const g of goles) {
     if (!golesMap[g.jugadorId])
@@ -257,9 +269,10 @@ export default async function EstadisticasPage({
                 <span className="text-sm font-bold text-gray-300 w-7 shrink-0">
                   #{i + 1}
                 </span>
-                <Initials
+                <PlayerAvatar
                   nombre={g.jugador.nombre}
                   apellido={g.jugador.apellido}
+                  fotografia={g.jugador.fotografia}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 text-sm">
@@ -295,9 +308,10 @@ export default async function EstadisticasPage({
                 <span className="text-sm font-bold text-gray-300 w-7 shrink-0">
                   #{i + 1}
                 </span>
-                <Initials
+                <PlayerAvatar
                   nombre={m.jugador.nombre}
                   apellido={m.jugador.apellido}
+                  fotografia={m.jugador.fotografia}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 text-sm">
@@ -370,9 +384,10 @@ export default async function EstadisticasPage({
                   >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <Initials
+                        <PlayerAvatar
                           nombre={p.jugador.nombre}
                           apellido={p.jugador.apellido}
+                          fotografia={p.jugador.fotografia}
                         />
                         <span className="font-medium text-gray-900">
                           {p.jugador.nombre} {p.jugador.apellido}

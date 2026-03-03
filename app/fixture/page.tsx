@@ -16,6 +16,7 @@ export default async function FixturePage({
   if (!session) return null;
 
   const userId = (session?.user as { id?: string } | undefined)?.id;
+  const today = new Date();
 
   const [torneos, partidos] = await Promise.all([
     prisma.torneo.findMany({ orderBy: { fechaInicio: "desc" } }),
@@ -99,6 +100,7 @@ export default async function FixturePage({
                     const esNuestro = p.equipo1 === GAGAMOTO || p.equipo2 === GAGAMOTO;
                     const rival = p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1;
                     const r = esNuestro ? resultadoGagamoto(p) : null;
+                    const sinResultado = !p.jugado && p.fecha && new Date(p.fecha) < today;
 
                     const asistencia = userId
                       ? p.asistencias.find((a) => a.userId === userId)?.estado ?? null
@@ -126,6 +128,12 @@ export default async function FixturePage({
                             <span className={`font-semibold text-sm ${esNuestro ? "text-gray-900" : "text-gray-500"}`}>
                               {esNuestro ? `vs ${rival}` : `${p.equipo1} vs ${p.equipo2}`}
                             </span>
+                            {sinResultado && (
+                              <span
+                                title="Falta cargar resultados"
+                                className="w-2 h-2 rounded-full bg-red-500 shrink-0 inline-block"
+                              />
+                            )}
                             {resultBadge && (
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>
                                 {resultBadge.label}

@@ -71,6 +71,11 @@ export default async function HomePage() {
     .slice(-3)
     .reverse();
 
+  // Partidos pasados sin resultado cargado
+  const partidosSinResultado = allPartidos.filter(
+    (p) => !p.jugado && isGagamoto(p) && p.fecha && new Date(p.fecha) < today
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -189,7 +194,16 @@ export default async function HomePage() {
         {/* Recent Results */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Resultados recientes</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-gray-900">Resultados recientes</h2>
+              {partidosSinResultado.length > 0 && (
+                <Link
+                  href="/fixture"
+                  title="Falta cargar resultados"
+                  className="w-2 h-2 rounded-full bg-red-500 shrink-0 block"
+                />
+              )}
+            </div>
             <Link href="/fixture" className="text-sm text-amber-500 font-medium hover:text-amber-600">
               Ver todos
             </Link>

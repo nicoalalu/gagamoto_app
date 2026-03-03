@@ -13,6 +13,7 @@ type Partido = {
   jugado: boolean;
   golesEquipo1: number | null;
   golesEquipo2: number | null;
+  mvpJugadorId: string | null;
 };
 type Jugador = { id: string; nombre: string; apellido: string; numeroCamiseta: number | null };
 
@@ -44,8 +45,8 @@ export default function AdminResultadosPage() {
   }, []);
 
   useEffect(() => {
-    if (!torneoId) { setPartidos([]); return; }
-    fetch(`/api/partidos?torneoId=${torneoId}`)
+    const url = torneoId ? `/api/partidos?torneoId=${torneoId}` : "/api/partidos";
+    fetch(url)
       .then((r) => r.json())
       .then((data: Partido[]) =>
         setPartidos(data.filter((p) => !p.fecha || new Date(p.fecha) <= new Date()))
@@ -119,10 +120,10 @@ export default function AdminResultadosPage() {
         <label className="block text-xs font-semibold text-gray-500 mb-1">Torneo</label>
         <select
           value={torneoId}
-          onChange={(e) => { setTorneoId(e.target.value); setSelectedPartido(null); setMsg(""); }}
+          onChange={(e) => { setTorneoId(e.target.value); setSelectedPartido(null); setMvpId(""); setMsg(""); }}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         >
-          <option value="">Seleccioná un torneo</option>
+          <option value="">Todos los partidos</option>
           {torneos.map((t) => (
             <option key={t.id} value={t.id}>{t.nombre}</option>
           ))}
@@ -138,6 +139,7 @@ export default function AdminResultadosPage() {
                 setSelectedPartido(p);
                 setG1(p?.golesEquipo1?.toString() ?? "");
                 setG2(p?.golesEquipo2?.toString() ?? "");
+                setMvpId(p?.mvpJugadorId ?? "");
                 setMsg("");
               }}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"

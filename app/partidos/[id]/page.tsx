@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, Award, Trophy, CheckCircle, XCircle } from "lucide
 import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
 import AsistenciaButton from "@/components/AsistenciaButton";
 import CalificacionForm from "@/components/CalificacionForm";
+import ResultadoForm from "@/components/ResultadoForm";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -307,6 +308,20 @@ export default async function PartidoPage({ params }: Params) {
           )}
         </div>
       </div>
+
+      {/* Cargar resultado (solo partidos pasados) */}
+      {esPasado && (
+        <ResultadoForm
+          partidoId={partido.id}
+          equipo1={partido.equipo1}
+          equipo2={partido.equipo2}
+          jugadores={jugadores}
+          initialGolesEquipo1={partido.golesEquipo1}
+          initialGolesEquipo2={partido.golesEquipo2}
+          initialMvpId={partido.mvpJugadorId}
+          ventanaAbierta={!!ventanaAbierta}
+        />
+      )}
 
       {/* Calificaciones (ventana abierta: hasta 48hs después del partido) */}
       {esNuestro && esPasado && userId && (

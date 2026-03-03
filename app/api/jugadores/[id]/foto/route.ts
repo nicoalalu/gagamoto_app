@@ -26,6 +26,7 @@ export async function POST(req: Request, { params }: Params) {
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"],
         maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB
+        allowOverwrite: true,
       }),
       onUploadCompleted: async ({ blob }) => {
         // Pathname format: jugadores/{id}.{ext}

@@ -105,6 +105,7 @@ export default function AdminJugadoresPage() {
       const blob = await upload(`jugadores/${jugadorId}.${ext}`, file, {
         access: "public",
         handleUploadUrl: `/api/jugadores/${jugadorId}/foto`,
+        allowOverwrite: true,
       });
       setJugadores((prev) =>
         prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: blob.url } : j))

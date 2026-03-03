@@ -17,6 +17,11 @@ export default async function FixturePage({
 
   const userId = (session?.user as { id?: string } | undefined)?.id;
   const today = new Date();
+  const allPartidosSinFiltro = await prisma.partido.findMany({
+    where: { fecha: { lt: today } },
+    select: { jugado: true },
+  });
+  const totalSinResultado = allPartidosSinFiltro.filter((p) => !p.jugado).length;
 
   const [torneos, partidos] = await Promise.all([
     prisma.torneo.findMany({ orderBy: { fechaInicio: "desc" } }),
@@ -44,6 +49,12 @@ export default async function FixturePage({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Partidos</h1>
           <p className="text-sm text-gray-500 mt-0.5">Calendario de partidos del torneo</p>
+          {totalSinResultado > 0 && (
+            <p className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-lg mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {totalSinResultado} partido{totalSinResultado !== 1 ? "s" : ""} sin resultado
+            </p>
+          )}
         </div>
 
         {torneos.length > 0 && (
@@ -129,10 +140,9 @@ export default async function FixturePage({
                               {esNuestro ? `vs ${rival}` : `${p.equipo1} vs ${p.equipo2}`}
                             </span>
                             {sinResultado && (
-                              <span
-                                title="Falta cargar resultados"
-                                className="w-2 h-2 rounded-full bg-red-500 shrink-0 inline-block"
-                              />
+                              <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">
+                                Sin resultado
+                              </span>
                             )}
                             {resultBadge && (
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>

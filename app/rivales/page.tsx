@@ -64,25 +64,14 @@ export default async function RivalesPage({
   }
   const rivales = Array.from(rivalesSet).sort();
 
-  // Stats vs selected rival
+  // H2H history (matches between GAGAMOTO and selected rival)
   const h2h = rivalSeleccionado
     ? h2hTodos
         .filter((p) => p.equipo1 === rivalSeleccionado || p.equipo2 === rivalSeleccionado)
         .sort((a, b) => (b.fecha?.getTime() ?? 0) - (a.fecha?.getTime() ?? 0))
     : [];
 
-  let pg = 0, pe = 0, pp = 0, gf = 0, gc = 0;
-  for (const p of h2h) {
-    const r = resultadoGagamoto(p);
-    if (!r) continue;
-    gf += r.gf;
-    gc += r.gc;
-    if (r.resultado === "G") pg++;
-    else if (r.resultado === "E") pe++;
-    else pp++;
-  }
-  const pj = pg + pe + pp;
-  const winRate = pj > 0 ? Math.round((pg / pj) * 100) : 0;
+  // Rival's OVERALL stats in the tournament (from standings)
   const rivalPos = rivalSeleccionado
     ? standings.findIndex((s) => s.nombre === rivalSeleccionado) + 1
     : 0;
@@ -90,13 +79,21 @@ export default async function RivalesPage({
     ? standings.find((s) => s.nombre === rivalSeleccionado)
     : null;
 
+  const pj = rivalStanding?.pj ?? 0;
+  const pg = rivalStanding?.pg ?? 0;
+  const pe = rivalStanding?.pe ?? 0;
+  const pp = rivalStanding?.pp ?? 0;
+  const gf = rivalStanding?.gf ?? 0;
+  const gc = rivalStanding?.gc ?? 0;
+  const winRate = pj > 0 ? Math.round((pg / pj) * 100) : 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Rivales</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Estadísticas head-to-head contra cada equipo
+          Estadísticas de cada equipo en el torneo
         </p>
       </div>
 
@@ -168,13 +165,13 @@ export default async function RivalesPage({
           {/* Match history */}
           {h2h.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center text-gray-400 text-sm">
-              Sin partidos jugados contra este rival
+              Sin partidos jugados contra GAGAMOTO FC
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-gray-900">
-                  Historial vs {rivalSeleccionado}
+                  Partidos vs GAGAMOTO FC
                 </h2>
               </div>
               {h2h.map((p, idx) => {
@@ -197,7 +194,7 @@ export default async function RivalesPage({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm text-gray-900">
-                          vs {rivalSeleccionado}
+                          vs GAGAMOTO FC
                         </span>
                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>
                           {resultBadge.label}

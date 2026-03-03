@@ -131,10 +131,16 @@ export default async function FixturePage({
                                 {resultBadge.label}
                               </span>
                             )}
-                            {p.jugado && r && (
-                              <span className="text-sm font-bold text-gray-700">
-                                {r.gf} - {r.gc}
-                              </span>
+                            {p.jugado && (
+                              r ? (
+                                <span className="text-sm font-bold text-gray-700">
+                                  {r.gf} - {r.gc}
+                                </span>
+                              ) : p.golesEquipo1 !== null ? (
+                                <span className="text-sm font-bold text-gray-500">
+                                  {p.golesEquipo1} - {p.golesEquipo2}
+                                </span>
+                              ) : null
                             )}
                           </div>
                           <div className="flex items-center gap-3 mt-1 flex-wrap">

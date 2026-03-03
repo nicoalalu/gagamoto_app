@@ -49,14 +49,15 @@ export default async function PartidoPage({ params }: Params) {
   const presentes = partido.asistencias.filter((a) => a.estado === "SI");
   const ausentes = partido.asistencias.filter((a) => a.estado === "NO");
 
-  const resultBadge =
-    r?.resultado === "G"
+  const resultBadge = esNuestro
+    ? r?.resultado === "G"
       ? { style: "bg-green-500 text-white", label: "WIN" }
       : r?.resultado === "E"
       ? { style: "bg-gray-200 text-gray-700", label: "DRAW" }
       : r?.resultado === "P"
       ? { style: "bg-red-500 text-white", label: "LOSS" }
-      : null;
+      : null
+    : null;
 
   return (
     <div className="space-y-4">

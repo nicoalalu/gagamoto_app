@@ -12,44 +12,47 @@ export default async function AdminPage() {
       icon: Calendar,
       title: "Torneos y Fixture",
       desc: "Crear torneos e importar partidos desde CSV",
-      color: "bg-[#0048FF]",
+      iconClass: "bg-blue-50 text-blue-600",
     },
     {
       href: "/admin/resultados",
       icon: ClipboardList,
       title: "Cargar Resultados",
       desc: "Registrar goles, tarjetas y MVP de partidos jugados",
-      color: "bg-green-600",
+      iconClass: "bg-green-50 text-green-600",
     },
     {
       href: "/admin/jugadores",
       icon: Users,
       title: "Jugadores",
       desc: "Importar o gestionar el plantel desde CSV",
-      color: "bg-zinc-800",
+      iconClass: "bg-gray-100 text-gray-600",
     },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-black flex items-center gap-2">
-        <Settings className="text-[#0048FF]" size={24} />
-        Admin
-      </h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Settings size={22} className="text-gray-400" />
+          Admin
+        </h1>
+        <p className="text-sm text-gray-500 mt-0.5">Gestión del equipo y torneos</p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {sections.map(({ href, icon: Icon, title, desc, color }) => (
+        {sections.map(({ href, icon: Icon, title, desc, iconClass }) => (
           <Link
             key={href}
             href={href}
-            className="border-2 border-black rounded-xl p-6 bg-white hover:bg-[#EEF3FF] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:bg-gray-50 transition-colors space-y-3"
           >
-            <div className={`${color} text-white w-10 h-10 rounded-xl flex items-center justify-center`}>
+            <div className={`${iconClass} w-10 h-10 rounded-xl flex items-center justify-center`}>
               <Icon size={20} />
             </div>
             <div>
-              <p className="font-bold">{title}</p>
-              <p className="text-sm text-zinc-500 mt-0.5">{desc}</p>
+              <p className="font-semibold text-gray-900">{title}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
             </div>
           </Link>
         ))}

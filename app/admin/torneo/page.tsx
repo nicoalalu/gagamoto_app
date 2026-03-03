@@ -94,16 +94,19 @@ export default function AdminTorneoPage() {
   return (
     <div className="space-y-8 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/admin" className="p-2 rounded-lg border-2 border-black hover:bg-zinc-100">
+        <Link href="/admin" className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-2xl font-black">Torneos y Fixture</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Torneos y Fixture</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Crear torneos e importar partidos</p>
+        </div>
       </div>
 
       {/* Crear torneo */}
-      <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="font-bold mb-4 flex items-center gap-2">
-          <Plus size={16} />
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-gray-400" />
           Nuevo torneo
         </h2>
         <form onSubmit={crearTorneo} className="space-y-3">
@@ -112,56 +115,56 @@ export default function AdminTorneoPage() {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Nombre del torneo"
-            className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm font-medium"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
           />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs font-bold text-zinc-500">Fecha inicio</label>
+              <label className="text-xs font-semibold text-gray-500">Fecha inicio</label>
               <input
                 type="date"
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
-                className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-zinc-500">Fecha fin</label>
+              <label className="text-xs font-semibold text-gray-500">Fecha fin</label>
               <input
                 type="date"
                 value={fechaFin}
                 onChange={(e) => setFechaFin(e.target.value)}
-                className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] transition-colors text-sm disabled:opacity-50"
+            className="bg-gray-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50"
           >
             {loading ? "Creando..." : "Crear torneo"}
           </button>
-          {msg && <p className="text-sm">{msg}</p>}
+          {msg && <p className={`text-sm font-medium ${msg.startsWith("✅") ? "text-green-700" : "text-red-700"}`}>{msg}</p>}
         </form>
       </div>
 
       {/* Importar fixture CSV */}
-      <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="font-bold mb-1 flex items-center gap-2">
-          <Upload size={16} />
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+          <Upload size={16} className="text-gray-400" />
           Importar fixture desde CSV
         </h2>
-        <p className="text-xs text-zinc-400 mb-4">
-          Columnas esperadas: <code>Fecha, Equipo_1, Equipo_2, Horario, Lugar</code>
+        <p className="text-xs text-gray-400 mb-4">
+          Columnas esperadas: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600">Fecha, Equipo_1, Equipo_2, Horario, Lugar</code>
         </p>
         <form onSubmit={importarFixture} className="space-y-3">
           <div>
-            <label className="text-xs font-bold text-zinc-500">Torneo</label>
+            <label className="text-xs font-semibold text-gray-500">Torneo</label>
             <select
               required
               value={selectedTorneoId}
               onChange={(e) => setSelectedTorneoId(e.target.value)}
-              className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm mt-1"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             >
               <option value="">Seleccioná un torneo</option>
               {torneos.map((t) => (
@@ -172,7 +175,7 @@ export default function AdminTorneoPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-bold text-zinc-500">Archivo CSV</label>
+            <label className="text-xs font-semibold text-gray-500">Archivo CSV</label>
             {/* Input oculto — se abre con el botón de abajo para evitar bugs de foco en macOS */}
             <input
               ref={fileRef}
@@ -185,11 +188,11 @@ export default function AdminTorneoPage() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="px-3 py-2 border-2 border-black rounded-lg text-sm font-semibold bg-white hover:bg-zinc-100 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold bg-white hover:bg-gray-50 transition-colors"
               >
                 Elegir archivo
               </button>
-              <span className="text-sm text-zinc-500 truncate max-w-[220px]">
+              <span className="text-sm text-gray-500 truncate max-w-[220px]">
                 {fileName || "Ningún archivo seleccionado"}
               </span>
             </div>
@@ -202,7 +205,7 @@ export default function AdminTorneoPage() {
           <button
             type="submit"
             disabled={importing || !csvText || !selectedTorneoId}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] transition-colors text-sm disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px]"
+            className="bg-gray-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50"
           >
             {importing ? "⏳ Importando..." : "Importar partidos"}
           </button>
@@ -221,19 +224,19 @@ export default function AdminTorneoPage() {
 
       {/* Torneos existentes */}
       {torneos.length > 0 && (
-        <div>
-          <h2 className="font-bold text-sm uppercase tracking-wider text-zinc-500 mb-3">
-            Torneos creados
-          </h2>
-          <ul className="space-y-2">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900 text-sm">Torneos creados</h2>
+          </div>
+          <ul className="divide-y divide-gray-50">
             {torneos.map((t) => (
               <li
                 key={t.id}
-                className="border-2 border-zinc-200 rounded-xl px-4 py-3 bg-white flex justify-between items-center"
+                className="px-5 py-3.5 bg-white flex justify-between items-center"
               >
-                <span className="font-semibold">{t.nombre}</span>
+                <span className="font-medium text-gray-900">{t.nombre}</span>
                 {t.fechaInicio && (
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-gray-400">
                     {t.fechaInicio?.slice(0, 10)} → {t.fechaFin?.slice(0, 10)}
                   </span>
                 )}

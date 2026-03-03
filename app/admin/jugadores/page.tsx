@@ -95,19 +95,19 @@ export default function AdminJugadoresPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/admin" className="p-2 rounded-lg border-2 border-black hover:bg-zinc-100">
+        <Link href="/admin" className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-2xl font-black flex items-center gap-2">
-          <Users size={22} className="text-[#0048FF]" />
-          Jugadores
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Jugadores</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Gestionar el plantel</p>
+        </div>
       </div>
 
       {/* Manual add */}
-      <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="font-bold mb-4 flex items-center gap-2">
-          <Plus size={16} /> Agregar jugador
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Plus size={16} className="text-gray-400" /> Agregar jugador
         </h2>
         <form onSubmit={agregarJugador} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -116,14 +116,14 @@ export default function AdminJugadoresPage() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre"
-              className="border-2 border-black rounded-lg px-3 py-2 text-sm"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             />
             <input
               required
               value={apellido}
               onChange={(e) => setApellido(e.target.value)}
               placeholder="Apellido"
-              className="border-2 border-black rounded-lg px-3 py-2 text-sm"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             />
           </div>
           <input
@@ -133,26 +133,26 @@ export default function AdminJugadoresPage() {
             value={numero}
             onChange={(e) => setNumero(e.target.value)}
             placeholder="Número de camiseta (opcional)"
-            className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
           />
           <button
             type="submit"
             disabled={adding}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] text-sm disabled:opacity-50"
+            className="bg-gray-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50"
           >
             {adding ? "Agregando..." : "Agregar"}
           </button>
-          {addMsg && <p className="text-sm">{addMsg}</p>}
+          {addMsg && <p className={`text-sm font-medium ${addMsg.startsWith("✅") ? "text-green-700" : "text-red-700"}`}>{addMsg}</p>}
         </form>
       </div>
 
       {/* CSV import */}
-      <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="font-bold mb-1 flex items-center gap-2">
-          <Upload size={16} /> Importar desde CSV
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+          <Upload size={16} className="text-gray-400" /> Importar desde CSV
         </h2>
-        <p className="text-xs text-zinc-400 mb-4">
-          Columnas: <code>Nombre, Apellido, Numero_de_camiseta</code>
+        <p className="text-xs text-gray-400 mb-4">
+          Columnas: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600">Nombre, Apellido, Numero_de_camiseta</code>
         </p>
         <form onSubmit={importarJugadores} className="space-y-3">
           {/* Input oculto — se abre con el botón de abajo para evitar bugs de foco en macOS */}
@@ -167,18 +167,18 @@ export default function AdminJugadoresPage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="px-3 py-2 border-2 border-black rounded-lg text-sm font-semibold bg-white hover:bg-zinc-100 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold bg-white hover:bg-gray-50 transition-colors"
             >
               Elegir archivo
             </button>
-            <span className="text-sm text-zinc-500 truncate max-w-[220px]">
+            <span className="text-sm text-gray-500 truncate max-w-[220px]">
               {fileName || "Ningún archivo seleccionado"}
             </span>
           </div>
           <button
             type="submit"
             disabled={importing || !csvText}
-            className="bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] text-sm disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px] transition-transform"
+            className="bg-gray-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50"
           >
             {importing ? "⏳ Importando..." : "Importar"}
           </button>
@@ -197,19 +197,19 @@ export default function AdminJugadoresPage() {
 
       {/* List */}
       {jugadores.length > 0 && (
-        <div className="border-2 border-black rounded-xl bg-white overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-          <div className="bg-zinc-100 px-4 py-2 font-bold text-sm text-zinc-600">
-            Plantel ({jugadores.length})
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900 text-sm">Plantel <span className="text-gray-400 font-normal">({jugadores.length})</span></h3>
           </div>
-          <ul className="divide-y divide-zinc-100">
+          <ul className="divide-y divide-gray-50">
             {jugadores.map((j) => (
-              <li key={j.id} className="flex items-center px-4 py-2.5 gap-3">
+              <li key={j.id} className="flex items-center px-5 py-3 gap-3">
                 {j.numeroCamiseta !== null && (
-                  <span className="w-8 h-8 rounded-full bg-[#0048FF] text-white text-xs flex items-center justify-center font-black shrink-0">
+                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold shrink-0">
                     {j.numeroCamiseta}
                   </span>
                 )}
-                <span className="font-semibold text-sm">
+                <span className="font-medium text-gray-900 text-sm">
                   {j.nombre} {j.apellido}
                 </span>
               </li>

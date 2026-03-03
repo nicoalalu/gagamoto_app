@@ -103,19 +103,22 @@ export default function AdminResultadosPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/admin" className="p-2 rounded-lg border-2 border-black hover:bg-zinc-100">
+        <Link href="/admin" className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-2xl font-black">Cargar Resultados</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Cargar Resultados</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Goles, tarjetas y MVP de partidos jugados</p>
+        </div>
       </div>
 
       {/* Selección torneo */}
-      <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <label className="block text-xs font-bold text-zinc-500 mb-1">Torneo</label>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <label className="block text-xs font-semibold text-gray-500 mb-1">Torneo</label>
         <select
           value={torneoId}
           onChange={(e) => { setTorneoId(e.target.value); setSelectedPartido(null); setMsg(""); }}
-          className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         >
           <option value="">Seleccioná un torneo</option>
           {torneos.map((t) => (
@@ -125,7 +128,7 @@ export default function AdminResultadosPage() {
 
         {partidos.length > 0 && (
           <div className="mt-3">
-            <label className="block text-xs font-bold text-zinc-500 mb-1">Partido</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Partido</label>
             <select
               value={selectedPartido?.id ?? ""}
               onChange={(e) => {
@@ -135,7 +138,7 @@ export default function AdminResultadosPage() {
                 setG2(p?.golesEquipo2?.toString() ?? "");
                 setMsg("");
               }}
-              className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             >
               <option value="">Seleccioná un partido</option>
               {partidos.map((p) => (
@@ -151,39 +154,39 @@ export default function AdminResultadosPage() {
       {selectedPartido && (
         <>
           {/* Resultado */}
-          <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="font-bold mb-4">Resultado</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h2 className="font-semibold text-gray-900 mb-4">Resultado</h2>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex-1">
-                <label className="text-xs font-bold text-zinc-500">{selectedPartido.equipo1}</label>
+                <label className="text-xs font-semibold text-gray-500">{selectedPartido.equipo1}</label>
                 <input
                   type="number"
                   min={0}
                   value={g1}
                   onChange={(e) => setG1(e.target.value)}
-                  className="w-full border-2 border-black rounded-lg px-3 py-2 text-2xl font-black text-center mt-1"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-2xl font-black text-center mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 />
               </div>
-              <span className="text-2xl font-black text-zinc-400 pt-5">–</span>
+              <span className="text-2xl font-black text-gray-300 pt-5">–</span>
               <div className="flex-1">
-                <label className="text-xs font-bold text-zinc-500">{selectedPartido.equipo2}</label>
+                <label className="text-xs font-semibold text-gray-500">{selectedPartido.equipo2}</label>
                 <input
                   type="number"
                   min={0}
                   value={g2}
                   onChange={(e) => setG2(e.target.value)}
-                  className="w-full border-2 border-black rounded-lg px-3 py-2 text-2xl font-black text-center mt-1"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-2xl font-black text-center mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 />
               </div>
             </div>
 
             {jugadores.length > 0 && (
               <div className="mt-4">
-                <label className="text-xs font-bold text-zinc-500">MVP</label>
+                <label className="text-xs font-semibold text-gray-500">MVP</label>
                 <select
                   value={mvpId}
                   onChange={(e) => setMvpId(e.target.value)}
-                  className="w-full border-2 border-black rounded-lg px-3 py-2 text-sm mt-1"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 >
                   <option value="">Sin MVP</option>
                   {jugadores.map((j) => (
@@ -198,23 +201,23 @@ export default function AdminResultadosPage() {
             <button
               onClick={guardarResultado}
               disabled={saving || g1 === "" || g2 === ""}
-              className="mt-4 bg-[#0048FF] text-white font-bold px-4 py-2 rounded-lg border-2 border-black hover:bg-[#003ACC] flex items-center gap-2 text-sm disabled:opacity-50"
+              className="mt-4 bg-gray-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
             >
               <Save size={15} />
               {saving ? "Guardando..." : "Guardar resultado"}
             </button>
-            {msg && <p className="text-sm mt-2">{msg}</p>}
+            {msg && <p className={`text-sm mt-2 font-medium ${msg.startsWith("✅") ? "text-green-700" : "text-red-700"}`}>{msg}</p>}
           </div>
 
           {/* Goles */}
-          <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="font-bold mb-4">⚽ Agregar gol</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h2 className="font-semibold text-gray-900 mb-4">Agregar gol</h2>
             <form onSubmit={agregarGol} className="flex gap-2 flex-wrap">
               <select
                 required
                 value={jugadorGolId}
                 onChange={(e) => setJugadorGolId(e.target.value)}
-                className="flex-1 border-2 border-black rounded-lg px-3 py-2 text-sm"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               >
                 <option value="">Jugador</option>
                 {jugadores.map((j) => (
@@ -230,26 +233,26 @@ export default function AdminResultadosPage() {
                 value={minutoGol}
                 onChange={(e) => setMinutoGol(e.target.value)}
                 placeholder="Min"
-                className="w-20 border-2 border-black rounded-lg px-2 py-2 text-sm"
+                className="w-20 border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
               <button
                 type="submit"
-                className="bg-green-500 text-white font-bold px-4 py-2 rounded-lg border-2 border-black text-sm"
+                className="bg-green-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm"
               >
-                +
+                + Gol
               </button>
             </form>
           </div>
 
           {/* Tarjetas */}
-          <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="font-bold mb-4">🟨 Agregar tarjeta</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h2 className="font-semibold text-gray-900 mb-4">Agregar tarjeta</h2>
             <form onSubmit={agregarTarjeta} className="flex gap-2 flex-wrap">
               <select
                 required
                 value={jugadorTarjetaId}
                 onChange={(e) => setJugadorTarjetaId(e.target.value)}
-                className="flex-1 border-2 border-black rounded-lg px-3 py-2 text-sm"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               >
                 <option value="">Jugador</option>
                 {jugadores.map((j) => (
@@ -261,16 +264,16 @@ export default function AdminResultadosPage() {
               <select
                 value={tipoTarjeta}
                 onChange={(e) => setTipoTarjeta(e.target.value as "AMARILLA" | "ROJA")}
-                className="border-2 border-black rounded-lg px-3 py-2 text-sm"
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               >
                 <option value="AMARILLA">🟨 Amarilla</option>
                 <option value="ROJA">🟥 Roja</option>
               </select>
               <button
                 type="submit"
-                className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg border-2 border-black text-sm"
+                className="bg-amber-400 text-black font-semibold px-4 py-2 rounded-lg hover:bg-amber-300 transition-colors text-sm"
               >
-                +
+                + Tarjeta
               </button>
             </form>
           </div>

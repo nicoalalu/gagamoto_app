@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Upload, Users } from "lucide-react";
+import { ArrowLeft, Plus, Upload, Camera } from "lucide-react";
+import Image from "next/image";
 
-type Jugador = { id: string; nombre: string; apellido: string; numeroCamiseta: number | null };
+type Jugador = { id: string; nombre: string; apellido: string; numeroCamiseta: number | null; fotografia: string | null };
 
 export default function AdminJugadoresPage() {
   const [jugadores, setJugadores] = useState<Jugador[]>([]);
@@ -13,6 +14,8 @@ export default function AdminJugadoresPage() {
   const [numero, setNumero] = useState("");
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState("");
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const photoRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState("");
@@ -90,6 +93,25 @@ export default function AdminJugadoresPage() {
     } finally {
       setImporting(false);
     }
+  }
+
+  async function subirFoto(jugadorId: string, file: File) {
+    setUploadingId(jugadorId);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/jugadores/${jugadorId}/foto`, { method: "POST", body: formData });
+    if (res.ok) {
+      const updated = await res.json();
+      setJugadores((prev) => prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: updated.fotografia } : j)));
+    }
+    setUploadingId(null);
+  }
+
+  async function borrarFoto(jugadorId: string) {
+    setUploadingId(jugadorId);
+    await fetch(`/api/jugadores/${jugadorId}/foto`, { method: "DELETE" });
+    setJugadores((prev) => prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: null } : j)));
+    setUploadingId(null);
   }
 
   return (
@@ -204,14 +226,60 @@ export default function AdminJugadoresPage() {
           <ul className="divide-y divide-gray-50">
             {jugadores.map((j) => (
               <li key={j.id} className="flex items-center px-5 py-3 gap-3">
-                {j.numeroCamiseta !== null && (
-                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold shrink-0">
-                    {j.numeroCamiseta}
-                  </span>
+                {/* Avatar / foto */}
+                <div className="relative shrink-0 group">
+                  {j.fotografia ? (
+                    <Image
+                      src={j.fotografia}
+                      alt={`${j.nombre} ${j.apellido}`}
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-full object-cover border border-gray-100"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                      {j.nombre[0]}{j.apellido[0]}
+                    </div>
+                  )}
+                  {/* Upload overlay */}
+                  <button
+                    type="button"
+                    onClick={() => photoRefs.current[j.id]?.click()}
+                    disabled={uploadingId === j.id}
+                    className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity disabled:opacity-40"
+                  >
+                    {uploadingId === j.id
+                      ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Camera size={13} className="text-white" />}
+                  </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={(el) => { photoRefs.current[j.id] = el; }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFoto(j.id, f); }}
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm">
+                    {j.numeroCamiseta !== null && (
+                      <span className="text-gray-400 text-xs mr-1.5">#{j.numeroCamiseta}</span>
+                    )}
+                    {j.nombre} {j.apellido}
+                  </p>
+                </div>
+
+                {j.fotografia && (
+                  <button
+                    type="button"
+                    onClick={() => borrarFoto(j.id)}
+                    disabled={uploadingId === j.id}
+                    className="text-xs text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40"
+                  >
+                    Quitar foto
+                  </button>
                 )}
-                <span className="font-medium text-gray-900 text-sm">
-                  {j.nombre} {j.apellido}
-                </span>
               </li>
             ))}
           </ul>

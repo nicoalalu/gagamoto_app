@@ -1,76 +1,237 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { Swords } from "lucide-react";
-import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
+import { Swords, Calendar, Award, TrendingUp } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { GAGAMOTO, resultadoGagamoto, computeStandings } from "@/lib/constants";
+import RivalSelector from "@/components/RivalSelector";
 
-export default async function RivalesPage() {
+export default async function RivalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rival?: string }>;
+}) {
+  const { rival: rivalSeleccionado } = await searchParams;
   const session = await auth();
   if (!session) return null;
 
-  const partidos = await prisma.partido.findMany({
-    where: {
-      jugado: true,
-      OR: [{ equipo1: GAGAMOTO }, { equipo2: GAGAMOTO }],
-    },
-    orderBy: { fecha: "desc" },
-  });
+  // Fetch everything we need
+  const [torneos, todosPartidos] = await Promise.all([
+    prisma.torneo.findMany({ orderBy: { fechaInicio: "asc" } }),
+    prisma.partido.findMany({
+      orderBy: { fecha: "asc" },
+      include: { torneo: true },
+    }),
+  ]);
 
-  // Group by rival
-  const rivalesMap: Record<
-    string,
-    { pj: number; pg: number; pe: number; pp: number; gf: number; gc: number }
-  > = {};
+  // Active torneo for standings
+  const today = new Date();
+  const torneoActivo =
+    torneos.find((t) => t.fechaInicio && new Date(t.fechaInicio) <= today) ??
+    torneos[torneos.length - 1] ??
+    null;
 
-  for (const p of partidos) {
-    const rival = p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1;
-    if (!rivalesMap[rival]) rivalesMap[rival] = { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0 };
+  const partidosTorneo = torneoActivo
+    ? todosPartidos.filter((p) => p.torneoId === torneoActivo.id)
+    : todosPartidos;
+
+  // Standings for position lookup
+  const standings = computeStandings(
+    partidosTorneo.filter((p) => p.jugado).map((p) => ({
+      equipo1: p.equipo1,
+      equipo2: p.equipo2,
+      golesEquipo1: p.golesEquipo1,
+      golesEquipo2: p.golesEquipo2,
+    }))
+  );
+
+  // All H2H matches (played, involving GAGAMOTO)
+  const h2hTodos = todosPartidos.filter(
+    (p) => p.jugado && (p.equipo1 === GAGAMOTO || p.equipo2 === GAGAMOTO)
+  );
+
+  // Unique rivals sorted alphabetically
+  const rivalesSet = new Set<string>();
+  for (const p of h2hTodos) {
+    rivalesSet.add(p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1);
+  }
+  // Also include rivals with upcoming (not yet played) matches
+  for (const p of todosPartidos) {
+    if (p.equipo1 === GAGAMOTO || p.equipo2 === GAGAMOTO) {
+      rivalesSet.add(p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1);
+    }
+  }
+  const rivales = Array.from(rivalesSet).sort();
+
+  // Stats vs selected rival
+  const h2h = rivalSeleccionado
+    ? h2hTodos
+        .filter((p) => p.equipo1 === rivalSeleccionado || p.equipo2 === rivalSeleccionado)
+        .sort((a, b) => (b.fecha?.getTime() ?? 0) - (a.fecha?.getTime() ?? 0))
+    : [];
+
+  let pg = 0, pe = 0, pp = 0, gf = 0, gc = 0;
+  for (const p of h2h) {
     const r = resultadoGagamoto(p);
     if (!r) continue;
-    rivalesMap[rival].pj++;
-    rivalesMap[rival].gf += r.gf;
-    rivalesMap[rival].gc += r.gc;
-    if (r.resultado === "G") rivalesMap[rival].pg++;
-    else if (r.resultado === "E") rivalesMap[rival].pe++;
-    else rivalesMap[rival].pp++;
+    gf += r.gf;
+    gc += r.gc;
+    if (r.resultado === "G") pg++;
+    else if (r.resultado === "E") pe++;
+    else pp++;
   }
-
-  const rivales = Object.entries(rivalesMap).sort((a, b) => b[1].pj - a[1].pj);
+  const pj = pg + pe + pp;
+  const winRate = pj > 0 ? Math.round((pg / pj) * 100) : 0;
+  const rivalPos = rivalSeleccionado
+    ? standings.findIndex((s) => s.nombre === rivalSeleccionado) + 1
+    : 0;
+  const rivalStanding = rivalSeleccionado
+    ? standings.find((s) => s.nombre === rivalSeleccionado)
+    : null;
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-2xl font-black flex items-center gap-2">
-        <Swords className="text-[#0048FF]" size={24} />
-        Rivales
-      </h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Rivales</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Estadísticas head-to-head contra cada equipo
+        </p>
+      </div>
 
+      {/* Selector */}
       {rivales.length === 0 ? (
-        <div className="text-center py-16 text-zinc-400">
+        <div className="text-center py-16 text-gray-400">
           <Swords size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="font-semibold">Sin resultados registrados aún</p>
+          <p className="font-semibold">Sin partidos registrados aún</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {rivales.map(([nombre, s]) => (
-            <Link
-              key={nombre}
-              href={`/rivales/${encodeURIComponent(nombre)}`}
-              className="flex items-center justify-between rounded-xl px-4 py-3 border-2 border-black bg-white hover:bg-[#EEF3FF] transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-            >
+        <RivalSelector rivales={rivales} selected={rivalSeleccionado ?? null} />
+      )}
+
+      {/* Stats for selected rival */}
+      {rivalSeleccionado && (
+        <div className="space-y-4">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
               <div>
-                <span className="font-bold">{nombre}</span>
-                <span className="text-xs text-zinc-400 ml-2">{s.pj} PJ</span>
+                <p className="text-sm text-gray-500 font-medium">Partidos</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{pj}</p>
               </div>
-              <div className="flex gap-3 text-sm font-semibold text-zinc-600">
-                <span className="text-green-600">{s.pg}G</span>
-                <span className="text-yellow-500">{s.pe}E</span>
-                <span className="text-red-500">{s.pp}P</span>
-                <span className="text-zinc-400">
-                  {s.gf}-{s.gc}
-                </span>
+              <div className="bg-blue-100 rounded-xl p-2.5">
+                <Calendar className="text-blue-500" size={20} />
               </div>
-            </Link>
-          ))}
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Victorias</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{pg}</p>
+                <p className="text-xs text-gray-400 mt-1">{pe}E · {pp}P</p>
+              </div>
+              <div className="bg-green-100 rounded-xl p-2.5">
+                <TrendingUp className="text-green-500" size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Goles</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{gf}</p>
+                <p className="text-xs text-gray-400 mt-1">{gc} en contra</p>
+              </div>
+              <div className="bg-yellow-100 rounded-xl p-2.5">
+                <Swords className="text-yellow-500" size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">
+                  {rivalPos > 0 ? "Posición en tabla" : "Efectividad"}
+                </p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {rivalPos > 0 ? `${rivalPos}°` : `${winRate}%`}
+                </p>
+                {rivalStanding && (
+                  <p className="text-xs text-gray-400 mt-1">{rivalStanding.pts} pts</p>
+                )}
+              </div>
+              <div className="bg-purple-100 rounded-xl p-2.5">
+                <Award className="text-purple-500" size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Match history */}
+          {h2h.length === 0 ? (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center text-gray-400 text-sm">
+              Sin partidos jugados contra este rival
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">
+                  Historial vs {rivalSeleccionado}
+                </h2>
+              </div>
+              {h2h.map((p, idx) => {
+                const r = resultadoGagamoto(p);
+                const resultBadge =
+                  r?.resultado === "G"
+                    ? { style: "bg-green-500 text-white", label: "WIN" }
+                    : r?.resultado === "E"
+                    ? { style: "bg-gray-200 text-gray-700", label: "DRAW" }
+                    : { style: "bg-red-500 text-white", label: "LOSS" };
+
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/fixture/${p.id}`}
+                    className={`flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors ${
+                      idx !== 0 ? "border-t border-gray-100" : ""
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm text-gray-900">
+                          vs {rivalSeleccionado}
+                        </span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>
+                          {resultBadge.label}
+                        </span>
+                        {r && (
+                          <span className="font-bold text-sm text-gray-700">
+                            {r.gf} - {r.gc}
+                          </span>
+                        )}
+                      </div>
+                      {p.fecha && (
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                          <Calendar size={11} />
+                          {format(new Date(p.fecha), "MMM dd, yyyy · HH:mm", { locale: es })}
+                          {p.torneo ? ` · ${p.torneo.nombre}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 font-medium shrink-0 ml-4">
+                      Ver detalles →
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Placeholder when nothing selected */}
+      {!rivalSeleccionado && rivales.length > 0 && (
+        <div className="text-center py-12 text-gray-400">
+          <Swords size={40} className="mx-auto mb-3 opacity-20" />
+          <p className="text-sm">Seleccioná un rival para ver las estadísticas</p>
         </div>
       )}
     </div>

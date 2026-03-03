@@ -134,7 +134,6 @@ export default async function EstadisticasPage({
         ? (ratingMap[j.id].sum / ratingMap[j.id].count).toFixed(1)
         : null,
     }))
-    .filter((p) => p.pj > 0 || p.goles > 0 || p.mvp > 0)
     .sort((a, b) => b.pj - a.pj || b.goles - a.goles);
 
   return (
@@ -323,7 +322,7 @@ export default async function EstadisticasPage({
       )}
 
       {/* ── Todos los jugadores ───────────────────────────────────────────── */}
-      {allPlayersData.length > 0 && (
+      {jugadores.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="font-bold text-gray-900">Todos los jugadores</h2>

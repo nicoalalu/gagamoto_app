@@ -20,12 +20,16 @@ export async function POST(req: Request, { params }: Params) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   const userId = (session.user as { id: string }).id;
-  const { estado } = await req.json();
+  const { estado, justificacion } = await req.json();
+  const justificacionVal =
+    estado === "NO" && justificacion
+      ? String(justificacion).slice(0, 50)
+      : null;
 
   const asistencia = await prisma.asistencia.upsert({
     where: { partidoId_userId: { partidoId: id, userId } },
-    update: { estado },
-    create: { partidoId: id, userId, estado },
+    update: { estado, justificacion: justificacionVal },
+    create: { partidoId: id, userId, estado, justificacion: justificacionVal },
   });
   return NextResponse.json(asistencia);
 }

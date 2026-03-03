@@ -59,10 +59,11 @@ export default async function HomePage() {
 
   // Mi asistencia al primer próximo partido
   const proximoPartido = proximosPartidos[0] ?? null;
-  const miAsistencia =
+  const miAsistenciaObj =
     proximoPartido && userId
-      ? proximoPartido.asistencias.find((a) => a.userId === userId)?.estado ?? null
+      ? proximoPartido.asistencias.find((a) => a.userId === userId) ?? null
       : null;
+  const miAsistencia = miAsistenciaObj?.estado ?? null;
 
   // Últimos 3 partidos jugados por Gagamoto
   const ultimos3 = allPartidos
@@ -179,6 +180,7 @@ export default async function HomePage() {
               <AsistenciaButton
                 partidoId={proximoPartido.id}
                 initialEstado={miAsistencia as "SI" | "NO" | null}
+                initialJustificacion={miAsistenciaObj?.justificacion ?? null}
               />
             </div>
           )}
@@ -270,11 +272,22 @@ export default async function HomePage() {
                     className={`border-t border-gray-100 ${
                       s.nombre === GAGAMOTO
                         ? "bg-amber-50 font-semibold"
-                        : "hover:bg-gray-50"
+                        : "hover:bg-gray-50 cursor-pointer"
                     }`}
                   >
                     <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.nombre}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {s.nombre === GAGAMOTO ? (
+                        s.nombre
+                      ) : (
+                        <Link
+                          href={`/rivales?rival=${encodeURIComponent(s.nombre)}`}
+                          className="hover:text-amber-600 hover:underline transition-colors"
+                        >
+                          {s.nombre}
+                        </Link>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{s.pj}</td>
                     <td className="px-4 py-3 text-gray-600">{s.pg}</td>
                     <td className="px-4 py-3 text-gray-600">{s.pe}</td>

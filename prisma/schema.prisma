@@ -111,11 +111,12 @@ model Jugador {
 }
 
 model Asistencia {
-  id        String          @id @default(cuid())
-  partidoId String
-  userId    String
-  estado    EstadoAsistencia
-  updatedAt DateTime        @updatedAt
+  id             String           @id @default(cuid())
+  partidoId      String
+  userId         String
+  estado         EstadoAsistencia
+  justificacion  String?          @db.VarChar(50)
+  updatedAt      DateTime         @updatedAt
 
   partido Partido @relation(fields: [partidoId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

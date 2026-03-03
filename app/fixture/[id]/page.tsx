@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Award, Trophy, CheckCircle, XCircle } from "lucide-react";
 import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
+import AsistenciaButton from "@/components/AsistenciaButton";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,8 @@ export default async function PartidoPage({ params }: Params) {
   const { id } = await params;
   const session = await auth();
   if (!session) return null;
+
+  const userId = (session?.user as { id?: string } | undefined)?.id;
 
   const partido = await prisma.partido.findUnique({
     where: { id },
@@ -48,6 +51,13 @@ export default async function PartidoPage({ params }: Params) {
 
   const presentes = partido.asistencias.filter((a) => a.estado === "SI");
   const ausentes = partido.asistencias.filter((a) => a.estado === "NO");
+
+  const esGagamoto = partido.equipo1 === GAGAMOTO || partido.equipo2 === GAGAMOTO;
+  const esFuturo =
+    !partido.jugado && partido.fecha && new Date(partido.fecha) > new Date();
+  const miAsistencia = userId
+    ? partido.asistencias.find((a) => a.userId === userId) ?? null
+    : null;
 
   const resultBadge = esNuestro
     ? r?.resultado === "G"
@@ -184,7 +194,16 @@ export default async function PartidoPage({ params }: Params) {
 
         {/* Attendance */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-900 mb-5">Attendance</h2>
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <h2 className="font-bold text-gray-900">Attendance</h2>
+            {esGagamoto && esFuturo && userId && (
+              <AsistenciaButton
+                partidoId={partido.id}
+                initialEstado={(miAsistencia?.estado as "SI" | "NO" | null) ?? null}
+                initialJustificacion={miAsistencia?.justificacion ?? null}
+              />
+            )}
+          </div>
 
           {presentes.length === 0 && ausentes.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-4">No attendance responses yet</p>
@@ -209,7 +228,14 @@ export default async function PartidoPage({ params }: Params) {
                   </p>
                   <ul className="space-y-1.5">
                     {ausentes.map((a) => (
-                      <li key={a.id} className="text-sm text-gray-400">{a.user.name}</li>
+                      <li key={a.id} className="text-sm text-gray-400">
+                        {a.user.name}
+                        {a.justificacion && (
+                          <span className="ml-1.5 italic text-xs text-gray-400">
+                            &ldquo;{a.justificacion}&rdquo;
+                          </span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>

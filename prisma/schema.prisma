@@ -95,6 +95,12 @@ model Partido {
   resenas     Resena[]
 }
 
+model Equipo {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  logo   String?
+}
+
 model Jugador {
   id              String  @id @default(cuid())
   nombre          String

@@ -6,19 +6,25 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { Trophy, TrendingUp, Calendar, Award } from "lucide-react";
 import AsistenciaBanner from "@/components/AsistenciaBanner";
+import TeamAvatar from "@/components/TeamAvatar";
 
 export default async function HomePage() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
 
   // Fetch all torneos and partidos
-  const [torneos, allPartidos] = await Promise.all([
+  const [torneos, allPartidos, equipos] = await Promise.all([
     prisma.torneo.findMany({ orderBy: { fechaInicio: "asc" } }),
     prisma.partido.findMany({
       orderBy: { fecha: "asc" },
       include: { torneo: true, asistencias: true, mvpJugador: true },
     }),
+    prisma.equipo.findMany({ select: { nombre: true, logo: true } }),
   ]);
+
+  const logoMap: Record<string, string | null> = Object.fromEntries(
+    equipos.map((e) => [e.nombre, e.logo])
+  );
 
   // Active torneo = latest one that started
   const today = new Date();
@@ -178,13 +184,16 @@ export default async function HomePage() {
                     href={`/partidos/${p.id}`}
                     className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
                   >
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm">{rival}</p>
-                      {p.fecha && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {format(new Date(p.fecha), "MMM dd, yyyy · HH:mm", { locale: es })}
-                        </p>
-                      )}
+                    <div className="flex items-center gap-2.5">
+                      <TeamAvatar nombre={rival} logo={logoMap[rival]} size={28} />
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">{rival}</p>
+                        {p.fecha && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {format(new Date(p.fecha), "MMM dd, yyyy · HH:mm", { locale: es })}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <span className="text-amber-500 font-bold text-sm">VS</span>
                   </Link>
@@ -236,7 +245,10 @@ export default async function HomePage() {
                     className="flex flex-col bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-800 text-sm">{rival}</span>
+                      <div className="flex items-center gap-2">
+                        <TeamAvatar nombre={rival} logo={logoMap[rival]} size={26} />
+                        <span className="font-semibold text-gray-800 text-sm">{rival}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900 text-sm">
                           {r ? `${r.gf} - ${r.gc}` : "-"}
@@ -297,12 +309,16 @@ export default async function HomePage() {
                     <td className="px-4 py-3 text-gray-500">{i + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {s.nombre === GAGAMOTO ? (
-                        s.nombre
+                        <div className="flex items-center gap-2">
+                          <TeamAvatar nombre={s.nombre} logo={logoMap[s.nombre]} size={24} />
+                          {s.nombre}
+                        </div>
                       ) : (
                         <Link
                           href={`/rivales?rival=${encodeURIComponent(s.nombre)}`}
-                          className="hover:text-amber-600 hover:underline transition-colors"
+                          className="flex items-center gap-2 hover:text-amber-600 transition-colors"
                         >
+                          <TeamAvatar nombre={s.nombre} logo={logoMap[s.nombre]} size={24} />
                           {s.nombre}
                         </Link>
                       )}

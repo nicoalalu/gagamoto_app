@@ -9,6 +9,7 @@ import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
 import AsistenciaButton from "@/components/AsistenciaButton";
 import CalificacionForm from "@/components/CalificacionForm";
 import ResultadoForm from "@/components/ResultadoForm";
+import TeamAvatar from "@/components/TeamAvatar";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,7 +20,7 @@ export default async function PartidoPage({ params }: Params) {
 
   const userId = (session?.user as { id?: string } | undefined)?.id;
 
-  const [partido, jugadores] = await Promise.all([
+  const [partido, jugadores, equipos] = await Promise.all([
     prisma.partido.findUnique({
       where: { id },
       include: {
@@ -34,9 +35,14 @@ export default async function PartidoPage({ params }: Params) {
       },
     }),
     prisma.jugador.findMany({ orderBy: [{ apellido: "asc" }, { nombre: "asc" }] }),
+    prisma.equipo.findMany({ select: { nombre: true, logo: true } }),
   ]);
 
   if (!partido) notFound();
+
+  const logoMap: Record<string, string | null> = Object.fromEntries(
+    equipos.map((e) => [e.nombre, e.logo])
+  );
 
   const ahora = new Date();
   const fechaPartido = partido.fecha ? new Date(partido.fecha) : null;
@@ -143,6 +149,19 @@ export default async function PartidoPage({ params }: Params) {
         {/* Fila principal */}
         <div className="flex items-start justify-between px-6 pt-6 pb-5">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <TeamAvatar
+                nombre={partido.equipo1}
+                logo={logoMap[partido.equipo1]}
+                size={36}
+              />
+              <span className="text-sm font-bold text-gray-400">VS</span>
+              <TeamAvatar
+                nombre={partido.equipo2}
+                logo={logoMap[partido.equipo2]}
+                size={36}
+              />
+            </div>
             <h1 className="text-xl font-bold text-gray-900">
               {esNuestro ? `vs ${rival}` : `${partido.equipo1} vs ${partido.equipo2}`}
             </h1>

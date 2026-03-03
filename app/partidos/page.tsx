@@ -5,6 +5,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
 import { Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
+import TeamAvatar from "@/components/TeamAvatar";
 
 export default async function FixturePage({
   searchParams,
@@ -23,14 +24,19 @@ export default async function FixturePage({
   });
   const totalSinResultado = allPartidosSinFiltro.filter((p) => !p.jugado).length;
 
-  const [torneos, partidos] = await Promise.all([
+  const [torneos, partidos, equipos] = await Promise.all([
     prisma.torneo.findMany({ orderBy: { fechaInicio: "desc" } }),
     prisma.partido.findMany({
       where: torneoId ? { torneoId } : undefined,
       orderBy: { fecha: "asc" },
       include: { torneo: true, asistencias: true },
     }),
+    prisma.equipo.findMany({ select: { nombre: true, logo: true } }),
   ]);
+
+  const logoMap: Record<string, string | null> = Object.fromEntries(
+    equipos.map((e) => [e.nombre, e.logo])
+  );
 
   // Group by date string (YYYY-MM-DD)
   const grouped = new Map<string, typeof partidos>();
@@ -136,6 +142,11 @@ export default async function FixturePage({
                         {/* Left: match info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
+                            <TeamAvatar
+                              nombre={esNuestro ? rival : p.equipo1}
+                              logo={logoMap[esNuestro ? rival : p.equipo1]}
+                              size={24}
+                            />
                             <span className={`font-semibold text-sm ${esNuestro ? "text-gray-900" : "text-gray-500"}`}>
                               {esNuestro ? `vs ${rival}` : `${p.equipo1} vs ${p.equipo2}`}
                             </span>

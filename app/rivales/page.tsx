@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { GAGAMOTO, computeStandings } from "@/lib/constants";
 import RivalSelector from "@/components/RivalSelector";
+import TeamAvatar from "@/components/TeamAvatar";
 
 export default async function RivalesPage({
   searchParams,
@@ -17,13 +18,18 @@ export default async function RivalesPage({
   if (!session) return null;
 
   // Fetch everything we need
-  const [torneos, todosPartidos] = await Promise.all([
+  const [torneos, todosPartidos, equipos] = await Promise.all([
     prisma.torneo.findMany({ orderBy: { fechaInicio: "asc" } }),
     prisma.partido.findMany({
       orderBy: { fecha: "asc" },
       include: { torneo: true },
     }),
+    prisma.equipo.findMany({ select: { nombre: true, logo: true } }),
   ]);
+
+  const logoMap: Record<string, string | null> = Object.fromEntries(
+    equipos.map((e) => [e.nombre, e.logo])
+  );
 
   // Active torneo for standings
   const today = new Date();
@@ -114,6 +120,18 @@ export default async function RivalesPage({
       {/* Stats for selected rival */}
       {rivalSeleccionado && (
         <div className="space-y-4">
+          {/* Rival header */}
+          <div className="flex items-center gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4">
+            <TeamAvatar nombre={rivalSeleccionado} logo={logoMap[rivalSeleccionado]} size={48} />
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Rival</p>
+              <p className="text-xl font-bold text-gray-900">{rivalSeleccionado}</p>
+              {rivalPos > 0 && (
+                <p className="text-xs text-gray-400">{rivalPos}° en tabla · {rivalStanding?.pts ?? 0} pts</p>
+              )}
+            </div>
+          </div>
+
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">

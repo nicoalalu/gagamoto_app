@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { Trophy, TrendingUp, Calendar, Award } from "lucide-react";
 import AsistenciaButton from "@/components/AsistenciaButton";
+import AsistenciaBanner from "@/components/AsistenciaBanner";
 
 export default async function HomePage() {
   const session = await auth();
@@ -76,8 +77,25 @@ export default async function HomePage() {
     (p) => !p.jugado && isGagamoto(p) && p.fecha && new Date(p.fecha) < today
   );
 
+  const bannerFecha = proximoPartido?.fecha
+    ? format(new Date(proximoPartido.fecha), "EEEE d 'de' MMMM · HH:mm", { locale: es })
+    : null;
+  const bannerRival = proximoPartido
+    ? (proximoPartido.equipo1 === GAGAMOTO ? proximoPartido.equipo2 : proximoPartido.equipo1)
+    : null;
+
   return (
     <div className="space-y-6">
+      {/* Banner asistencia próximo partido */}
+      {proximoPartido && bannerRival && userId && miAsistencia === null && (
+        <AsistenciaBanner
+          partidoId={proximoPartido.id}
+          rival={bannerRival}
+          fecha={bannerFecha}
+          lugar={proximoPartido.lugar ?? null}
+        />
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>

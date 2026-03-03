@@ -42,14 +42,14 @@ export default async function FixturePage({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fixture</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Partidos</h1>
           <p className="text-sm text-gray-500 mt-0.5">Calendario de partidos del torneo</p>
         </div>
 
         {torneos.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             <Link
-              href="/fixture"
+              href="/partidos"
               className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                 !torneoId
                   ? "bg-gray-900 text-white"
@@ -61,7 +61,7 @@ export default async function FixturePage({
             {torneos.map((t) => (
               <Link
                 key={t.id}
-                href={`/fixture?torneo=${t.id}`}
+                href={`/partidos?torneo=${t.id}`}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                   torneoId === t.id
                     ? "bg-gray-900 text-white"
@@ -108,11 +108,11 @@ export default async function FixturePage({
 
                     const resultBadge =
                       r?.resultado === "G"
-                        ? { style: "bg-green-500 text-white", label: "WIN" }
+                        ? { style: "bg-green-500 text-white", label: "Victoria" }
                         : r?.resultado === "E"
-                        ? { style: "bg-gray-400 text-white", label: "DRAW" }
+                        ? { style: "bg-gray-400 text-white", label: "Empate" }
                         : r?.resultado === "P"
-                        ? { style: "bg-red-500 text-white", label: "LOSS" }
+                        ? { style: "bg-red-500 text-white", label: "Derrota" }
                         : null;
 
                     return (
@@ -161,13 +161,13 @@ export default async function FixturePage({
                             {esNuestro && !p.jugado && asistencia === "SI" && (
                               <span className="flex items-center gap-1 text-xs font-medium text-green-600">
                                 <CheckCircle size={12} />
-                                Attending
+                                Presente
                               </span>
                             )}
                             {esNuestro && !p.jugado && asistencia === "NO" && (
                               <span className="flex items-center gap-1 text-xs font-medium text-red-500">
                                 <XCircle size={12} />
-                                Not attending
+                                Ausente
                               </span>
                             )}
                             {esNuestro && !p.jugado && asistencia === null && (
@@ -181,7 +181,7 @@ export default async function FixturePage({
 
                         {/* Right: action */}
                         <Link
-                          href={`/fixture/${p.id}`}
+                          href={`/partidos/${p.id}`}
                           className="shrink-0 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors px-4 py-1.5 rounded-lg"
                         >
                           Ver detalles

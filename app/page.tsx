@@ -146,9 +146,7 @@ export default async function HomePage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Próximos partidos</h2>
-            <Link href="/fixture" className="text-sm text-amber-500 font-medium hover:text-amber-600">
-              Ver todos
-            </Link>
+            <Link href="/partidos" className="text-sm text-amber-500 font-medium hover:text-amber-600">Ver todos</Link>
           </div>
 
           {proximosPartidos.length === 0 ? (
@@ -160,7 +158,7 @@ export default async function HomePage() {
                 return (
                   <Link
                     key={p.id}
-                    href={`/fixture/${p.id}`}
+                    href={`/partidos/${p.id}`}
                     className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
                   >
                     <div>
@@ -198,13 +196,13 @@ export default async function HomePage() {
               <h2 className="font-semibold text-gray-900">Resultados recientes</h2>
               {partidosSinResultado.length > 0 && (
                 <Link
-                  href="/fixture"
+                  href="/partidos"
                   title="Falta cargar resultados"
                   className="w-2 h-2 rounded-full bg-red-500 shrink-0 block"
                 />
               )}
             </div>
-            <Link href="/fixture" className="text-sm text-amber-500 font-medium hover:text-amber-600">
+            <Link href="/partidos" className="text-sm text-amber-500 font-medium hover:text-amber-600">
               Ver todos
             </Link>
           </div>
@@ -223,11 +221,11 @@ export default async function HomePage() {
                     ? "bg-gray-400 text-white"
                     : "bg-red-500 text-white";
                 const badgeLabel =
-                  r?.resultado === "G" ? "WIN" : r?.resultado === "E" ? "DRAW" : "LOSS";
+                  r?.resultado === "G" ? "Victoria" : r?.resultado === "E" ? "Empate" : "Derrota";
                 return (
                   <Link
                     key={p.id}
-                    href={`/fixture/${p.id}`}
+                    href={`/partidos/${p.id}`}
                     className="flex flex-col bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center justify-between">

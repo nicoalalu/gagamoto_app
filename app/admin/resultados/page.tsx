@@ -47,7 +47,9 @@ export default function AdminResultadosPage() {
     if (!torneoId) { setPartidos([]); return; }
     fetch(`/api/partidos?torneoId=${torneoId}`)
       .then((r) => r.json())
-      .then(setPartidos);
+      .then((data: Partido[]) =>
+        setPartidos(data.filter((p) => !p.fecha || new Date(p.fecha) <= new Date()))
+      );
   }, [torneoId]);
 
   async function guardarResultado() {

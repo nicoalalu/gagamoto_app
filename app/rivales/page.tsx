@@ -201,7 +201,7 @@ export default async function RivalesPage({
                 return (
                   <Link
                     key={p.id}
-                    href={`/fixture/${p.id}`}
+                    href={`/partidos/${p.id}`}
                     className={`flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors ${
                       idx !== 0 ? "border-t border-gray-100" : ""
                     }`}

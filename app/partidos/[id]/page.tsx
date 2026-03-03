@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Award, Trophy, CheckCircle, XCircle } from "lucide-react";
 import { GAGAMOTO, resultadoGagamoto } from "@/lib/constants";
 import AsistenciaButton from "@/components/AsistenciaButton";
+import CalificacionForm from "@/components/CalificacionForm";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,37 +18,93 @@ export default async function PartidoPage({ params }: Params) {
 
   const userId = (session?.user as { id?: string } | undefined)?.id;
 
-  const partido = await prisma.partido.findUnique({
-    where: { id },
-    include: {
-      torneo: true,
-      goles: { include: { jugador: true }, orderBy: { minuto: "asc" } },
-      tarjetas: { include: { jugador: true }, orderBy: { minuto: "asc" } },
-      asistencias: { include: { user: true } },
-      votos: { include: { jugador: true } },
-      mvpJugador: true,
-    },
-  });
+  const [partido, jugadores] = await Promise.all([
+    prisma.partido.findUnique({
+      where: { id },
+      include: {
+        torneo: true,
+        goles: { include: { jugador: true }, orderBy: { minuto: "asc" } },
+        tarjetas: { include: { jugador: true }, orderBy: { minuto: "asc" } },
+        asistencias: { include: { user: true } },
+        votos: { include: { jugador: true } },
+        calificaciones: { include: { jugador: true } },
+        resenas: { include: { user: true } },
+        mvpJugador: true,
+      },
+    }),
+    prisma.jugador.findMany({ orderBy: [{ apellido: "asc" }, { nombre: "asc" }] }),
+  ]);
 
   if (!partido) notFound();
+
+  const ahora = new Date();
+  const fechaPartido = partido.fecha ? new Date(partido.fecha) : null;
+  const esPasado = fechaPartido && fechaPartido < ahora;
+  const ventanaAbierta =
+    esPasado &&
+    fechaPartido &&
+    ahora < new Date(fechaPartido.getTime() + 48 * 60 * 60 * 1000);
+  const ventanaCerrada = esPasado && !ventanaAbierta;
 
   const r = resultadoGagamoto(partido);
   const esNuestro = partido.equipo1 === GAGAMOTO || partido.equipo2 === GAGAMOTO;
   const rival = partido.equipo1 === GAGAMOTO ? partido.equipo2 : partido.equipo1;
 
-  // MVP by votes fallback
-  const voteCount: Record<string, number> = {};
-  partido.votos.forEach((v) => {
-    voteCount[v.jugadorId] = (voteCount[v.jugadorId] ?? 0) + 1;
-  });
-  const mvpVotado = partido.votos.reduce(
-    (top, v) => {
-      const count = voteCount[v.jugadorId] ?? 0;
-      return !top || count > (voteCount[top.jugadorId] ?? 0) ? v : top;
-    },
-    null as (typeof partido.votos)[0] | null
-  );
-  const mvp = partido.mvpJugador ?? mvpVotado?.jugador ?? null;
+  // ── MVP automático después de 48 hs ─────────────────────────────────────────────
+  let mvpAuto: (typeof jugadores)[0] | null = null;
+  const avgRatings: { jugador: (typeof jugadores)[0]; avg: number; count: number }[] = [];
+
+  if (ventanaCerrada && partido.calificaciones.length > 0) {
+    const porUsuario: Record<string, { jugadorId: string; puntaje: number }[]> = {};
+    for (const c of partido.calificaciones) {
+      if (!porUsuario[c.userId]) porUsuario[c.userId] = [];
+      porUsuario[c.userId].push({ jugadorId: c.jugadorId, puntaje: c.puntaje });
+    }
+    const topVotes: Record<string, number> = {};
+    for (const ratings of Object.values(porUsuario)) {
+      const maxPuntaje = Math.max(...ratings.map((r) => r.puntaje));
+      const tops = ratings.filter((r) => r.puntaje === maxPuntaje);
+      for (const top of tops) {
+        topVotes[top.jugadorId] = (topVotes[top.jugadorId] ?? 0) + 1;
+      }
+    }
+    const sumas: Record<string, { sum: number; count: number }> = {};
+    for (const c of partido.calificaciones) {
+      if (!sumas[c.jugadorId]) sumas[c.jugadorId] = { sum: 0, count: 0 };
+      sumas[c.jugadorId].sum += c.puntaje;
+      sumas[c.jugadorId].count++;
+    }
+    for (const j of jugadores) {
+      if (sumas[j.id]) {
+        avgRatings.push({
+          jugador: j,
+          avg: sumas[j.id].sum / sumas[j.id].count,
+          count: sumas[j.id].count,
+        });
+      }
+    }
+    avgRatings.sort((a, b) => b.avg - a.avg);
+    const sortedCandidates = Object.entries(topVotes).sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      const avgA = sumas[a[0]] ? sumas[a[0]].sum / sumas[a[0]].count : 0;
+      const avgB = sumas[b[0]] ? sumas[b[0]].sum / sumas[b[0]].count : 0;
+      return avgB - avgA;
+    });
+    const mvpId = sortedCandidates[0]?.[0];
+    mvpAuto = jugadores.find((j) => j.id === mvpId) ?? null;
+  }
+
+  const mvp = partido.mvpJugador ?? mvpAuto;
+
+  const misCalificaciones: Record<string, number> = {};
+  if (userId) {
+    for (const c of partido.calificaciones.filter((c) => c.userId === userId)) {
+      misCalificaciones[c.jugadorId] = c.puntaje;
+    }
+  }
+  const miResena = userId
+    ? partido.resenas.find((r) => r.userId === userId)?.comentario ?? ""
+    : "";
 
   const presentes = partido.asistencias.filter((a) => a.estado === "SI");
   const ausentes = partido.asistencias.filter((a) => a.estado === "NO");
@@ -61,28 +118,28 @@ export default async function PartidoPage({ params }: Params) {
 
   const resultBadge = esNuestro
     ? r?.resultado === "G"
-      ? { style: "bg-green-500 text-white", label: "WIN" }
+      ? { style: "bg-green-500 text-white", label: "Victoria" }
       : r?.resultado === "E"
-      ? { style: "bg-gray-200 text-gray-700", label: "DRAW" }
+      ? { style: "bg-gray-200 text-gray-700", label: "Empate" }
       : r?.resultado === "P"
-      ? { style: "bg-red-500 text-white", label: "LOSS" }
+      ? { style: "bg-red-500 text-white", label: "Derrota" }
       : null
     : null;
 
   return (
     <div className="space-y-4">
-      {/* Back */}
+      {/* Volver */}
       <Link
-        href="/fixture"
+        href="/partidos"
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
       >
         <ArrowLeft size={16} />
-        Volver al fixture
+        Volver a partidos
       </Link>
 
       {/* Hero card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Score row */}
+        {/* Fila principal */}
         <div className="flex items-start justify-between px-6 pt-6 pb-5">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
@@ -93,6 +150,9 @@ export default async function PartidoPage({ params }: Params) {
                 <Calendar size={13} />
                 {format(new Date(partido.fecha), "MMMM d, yyyy · HH:mm", { locale: es })}
               </p>
+            )}
+            {partido.torneo && (
+              <p className="text-xs text-gray-400 mt-0.5">{partido.torneo.nombre}</p>
             )}
           </div>
           <div className="text-right">
@@ -124,30 +184,33 @@ export default async function PartidoPage({ params }: Params) {
                 <Award size={20} className="text-amber-500" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 font-medium">Match MVP</p>
+                <p className="text-xs text-gray-400 font-medium">MVP</p>
                 <p className="font-bold text-gray-900">
                   {mvp.nombre} {mvp.apellido}
                 </p>
+                {ventanaCerrada && (
+                  <p className="text-xs text-gray-400">Elegido por el equipo</p>
+                )}
               </div>
             </div>
           </>
         )}
       </div>
 
-      {/* Stats + Attendance */}
+      {/* Estadísticas + Asistencia */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Match Statistics */}
+        {/* Estadísticas */}
         <div className="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-900 mb-5">Match Statistics</h2>
+          <h2 className="font-bold text-gray-900 mb-5">Estadísticas del partido</h2>
 
           {partido.goles.length === 0 && partido.tarjetas.length === 0 ? (
             <p className="text-sm text-gray-400">Sin estadísticas registradas</p>
           ) : (
             <div className="space-y-5">
-              {/* Goals */}
+              {/* Goles */}
               {partido.goles.length > 0 && (
                 <div>
-                  <p className="text-sm text-gray-400 font-medium mb-2">Goals</p>
+                  <p className="text-sm text-gray-400 font-medium mb-2">Goles</p>
                   <ul className="space-y-2">
                     {partido.goles.map((g) => (
                       <li key={g.id} className="flex items-center gap-2.5 text-sm text-gray-700">
@@ -164,15 +227,15 @@ export default async function PartidoPage({ params }: Params) {
                 </div>
               )}
 
-              {/* Cards */}
+              {/* Tarjetas */}
               {partido.tarjetas.length > 0 && (
                 <div>
-                  <p className="text-sm text-gray-400 font-medium mb-2">Cards</p>
+                  <p className="text-sm text-gray-400 font-medium mb-2">Tarjetas</p>
                   <ul className="space-y-2">
                     {partido.tarjetas.map((t) => (
                       <li key={t.id} className="flex items-center gap-2.5 text-sm text-gray-700">
                         <span
-                          className={`w-3.5 h-4.5 rounded-sm shrink-0 inline-block ${
+                          className={`rounded-sm shrink-0 inline-block ${
                             t.tipo === "AMARILLA" ? "bg-yellow-400" : "bg-red-600"
                           }`}
                           style={{ minWidth: "0.875rem", height: "1.125rem" }}
@@ -192,10 +255,10 @@ export default async function PartidoPage({ params }: Params) {
           )}
         </div>
 
-        {/* Attendance */}
+        {/* Asistencia */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-start justify-between gap-3 mb-5">
-            <h2 className="font-bold text-gray-900">Attendance</h2>
+            <h2 className="font-bold text-gray-900">Asistencia</h2>
             {esGagamoto && esFuturo && userId && (
               <AsistenciaButton
                 partidoId={partido.id}
@@ -206,13 +269,13 @@ export default async function PartidoPage({ params }: Params) {
           </div>
 
           {presentes.length === 0 && ausentes.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No attendance responses yet</p>
+            <p className="text-sm text-gray-400 text-center py-4">Sin respuestas de asistencia</p>
           ) : (
             <div className="space-y-4">
               {presentes.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-green-600 mb-2 flex items-center gap-1">
-                    <CheckCircle size={12} /> Attending ({presentes.length})
+                    <CheckCircle size={12} /> Presentes ({presentes.length})
                   </p>
                   <ul className="space-y-1.5">
                     {presentes.map((a) => (
@@ -224,7 +287,7 @@ export default async function PartidoPage({ params }: Params) {
               {ausentes.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-red-500 mb-2 flex items-center gap-1">
-                    <XCircle size={12} /> Not attending ({ausentes.length})
+                    <XCircle size={12} /> Ausentes ({ausentes.length})
                   </p>
                   <ul className="space-y-1.5">
                     {ausentes.map((a) => (
@@ -244,6 +307,66 @@ export default async function PartidoPage({ params }: Params) {
           )}
         </div>
       </div>
+
+      {/* Calificaciones (ventana abierta: hasta 48hs después del partido) */}
+      {esNuestro && esPasado && userId && (
+        <CalificacionForm
+          partidoId={partido.id}
+          jugadores={jugadores}
+          initialRatings={misCalificaciones}
+          initialComentario={miResena}
+          ventanaAbierta={!!ventanaAbierta}
+        />
+      )}
+
+      {/* Resultados de calificaciones (ventana cerrada) */}
+      {ventanaCerrada && avgRatings.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Calificaciones del equipo</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Promedio de puntuación según los votos del equipo</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {avgRatings.map((item, i) => (
+              <div key={item.jugador.id} className="flex items-center px-6 py-3 gap-4">
+                <span className="text-xs text-gray-300 w-5 shrink-0">#{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    {item.jugador.nombre} {item.jugador.apellido}
+                  </p>
+                  <p className="text-xs text-gray-400">{item.count} voto{item.count !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xl font-black text-gray-900">{item.avg.toFixed(1)}</p>
+                  <p className="text-xs text-gray-400">/10</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Comentarios (ventana cerrada) */}
+      {ventanaCerrada && partido.resenas.filter((r) => r.comentario).length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 className="font-semibold text-gray-900 mb-4">Comentarios del equipo</h2>
+          <div className="space-y-3">
+            {partido.resenas
+              .filter((r) => r.comentario)
+              .map((r) => (
+                <div key={r.id} className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                    {(r.user.name?.[0] ?? "?").toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500">{r.user.name}</p>
+                    <p className="text-sm text-gray-700 mt-0.5">&ldquo;{r.comentario}&rdquo;</p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

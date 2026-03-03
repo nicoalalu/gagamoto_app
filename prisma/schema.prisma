@@ -58,6 +58,7 @@ model User {
   asistencias    Asistencia[]
   votosGiven     VotoMvp[]
   calificaciones Calificacion[]
+  resenas        Resena[]
   jugador        Jugador?
 }
 
@@ -91,6 +92,7 @@ model Partido {
   tarjetas    Tarjeta[]
   votos       VotoMvp[]
   calificaciones Calificacion[]
+  resenas     Resena[]
 }
 
 model Jugador {
@@ -171,6 +173,19 @@ model Calificacion {
   jugador Jugador @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
 
   @@unique([partidoId, userId, jugadorId])
+}
+
+model Resena {
+  id         String   @id @default(cuid())
+  partidoId  String
+  userId     String
+  comentario String?  @db.VarChar(300)
+  createdAt  DateTime @default(now())
+
+  partido Partido @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([partidoId, userId])
 }
 
 // ─── Enums ─────────────────────────────────────────────────────────────────

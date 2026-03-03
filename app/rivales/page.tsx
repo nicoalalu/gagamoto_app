@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Swords, Calendar, Award, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { GAGAMOTO, resultadoGagamoto, computeStandings } from "@/lib/constants";
+import { GAGAMOTO, computeStandings } from "@/lib/constants";
 import RivalSelector from "@/components/RivalSelector";
 
 export default async function RivalesPage({
@@ -64,10 +64,14 @@ export default async function RivalesPage({
   }
   const rivales = Array.from(rivalesSet).sort();
 
-  // H2H history (matches between GAGAMOTO and selected rival)
-  const h2h = rivalSeleccionado
-    ? h2hTodos
-        .filter((p) => p.equipo1 === rivalSeleccionado || p.equipo2 === rivalSeleccionado)
+  // Full match history of selected rival
+  const historialRival = rivalSeleccionado
+    ? todosPartidos
+        .filter(
+          (p) =>
+            p.jugado &&
+            (p.equipo1 === rivalSeleccionado || p.equipo2 === rivalSeleccionado)
+        )
         .sort((a, b) => (b.fecha?.getTime() ?? 0) - (a.fecha?.getTime() ?? 0))
     : [];
 
@@ -163,23 +167,34 @@ export default async function RivalesPage({
           </div>
 
           {/* Match history */}
-          {h2h.length === 0 ? (
+          {historialRival.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center text-gray-400 text-sm">
-              Sin partidos jugados contra GAGAMOTO FC
+              Sin partidos jugados
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-gray-900">
-                  Partidos vs GAGAMOTO FC
+                  Historial completo
                 </h2>
               </div>
-              {h2h.map((p, idx) => {
-                const r = resultadoGagamoto(p);
+              {historialRival.map((p, idx) => {
+                const esEquipo1 = p.equipo1 === rivalSeleccionado;
+                const rival = esEquipo1 ? p.equipo2 : p.equipo1;
+                const gf = esEquipo1 ? p.golesEquipo1 : p.golesEquipo2;
+                const gc = esEquipo1 ? p.golesEquipo2 : p.golesEquipo1;
+                const resultado =
+                  gf === null || gc === null
+                    ? null
+                    : gf > gc
+                    ? "G"
+                    : gf < gc
+                    ? "P"
+                    : "E";
                 const resultBadge =
-                  r?.resultado === "G"
+                  resultado === "G"
                     ? { style: "bg-green-500 text-white", label: "WIN" }
-                    : r?.resultado === "E"
+                    : resultado === "E"
                     ? { style: "bg-gray-200 text-gray-700", label: "DRAW" }
                     : { style: "bg-red-500 text-white", label: "LOSS" };
 
@@ -194,14 +209,16 @@ export default async function RivalesPage({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm text-gray-900">
-                          vs GAGAMOTO FC
+                          vs {rival}
                         </span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>
-                          {resultBadge.label}
-                        </span>
-                        {r && (
+                        {resultado && (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${resultBadge.style}`}>
+                            {resultBadge.label}
+                          </span>
+                        )}
+                        {gf !== null && gc !== null && (
                           <span className="font-bold text-sm text-gray-700">
-                            {r.gf} - {r.gc}
+                            {gf} - {gc}
                           </span>
                         )}
                       </div>

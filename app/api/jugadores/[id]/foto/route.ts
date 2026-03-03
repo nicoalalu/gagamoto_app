@@ -24,7 +24,13 @@ export async function POST(req: Request, { params }: Params) {
     try { await del(jugador.fotografia); } catch {}
   }
 
-  const blob = await put(filename, file, { access: "public", allowOverwrite: true });
+  let blob;
+  try {
+    blob = await put(filename, file, { access: "public", allowOverwrite: true });
+  } catch (err) {
+    console.error("[foto/route] Error al subir a Vercel Blob:", err);
+    return NextResponse.json({ error: "Error al subir imagen al storage" }, { status: 500 });
+  }
 
   const updated = await prisma.jugador.update({
     where: { id },

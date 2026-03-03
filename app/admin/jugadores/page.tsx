@@ -15,6 +15,7 @@ export default function AdminJugadoresPage() {
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState("");
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const photoRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [csvText, setCsvText] = useState("");
@@ -97,14 +98,22 @@ export default function AdminJugadoresPage() {
 
   async function subirFoto(jugadorId: string, file: File) {
     setUploadingId(jugadorId);
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch(`/api/jugadores/${jugadorId}/foto`, { method: "POST", body: formData });
-    if (res.ok) {
-      const updated = await res.json();
-      setJugadores((prev) => prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: updated.fotografia } : j)));
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/jugadores/${jugadorId}/foto`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        setJugadores((prev) => prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: data.fotografia } : j)));
+      } else {
+        setUploadError(`Error al subir foto: ${data.error ?? res.statusText}`);
+      }
+    } catch (err) {
+      setUploadError(`Error de red: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUploadingId(null);
     }
-    setUploadingId(null);
   }
 
   async function borrarFoto(jugadorId: string) {
@@ -218,6 +227,11 @@ export default function AdminJugadoresPage() {
       </div>
 
       {/* List */}
+      {uploadError && (
+        <p className="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {uploadError}
+        </p>
+      )}
       {jugadores.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100">

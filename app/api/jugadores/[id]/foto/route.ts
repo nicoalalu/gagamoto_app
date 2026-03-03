@@ -52,6 +52,29 @@ export async function POST(req: Request, { params }: Params) {
   }
 }
 
+export async function PATCH(req: Request, { params }: Params) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const { url } = await req.json() as { url: string };
+
+  if (!url) return NextResponse.json({ error: "No url" }, { status: 400 });
+
+  // Delete previous blob if different
+  const jugador = await prisma.jugador.findUnique({ where: { id }, select: { fotografia: true } });
+  if (jugador?.fotografia && jugador.fotografia !== url) {
+    try { await del(jugador.fotografia); } catch {}
+  }
+
+  const updated = await prisma.jugador.update({
+    where: { id },
+    data: { fotografia: url },
+  });
+
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(_req: Request, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

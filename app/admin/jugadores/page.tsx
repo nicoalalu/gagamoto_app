@@ -106,6 +106,18 @@ export default function AdminJugadoresPage() {
         access: "public",
         handleUploadUrl: `/api/jugadores/${jugadorId}/foto`,
       });
+
+      // Save URL to DB directly from client (onUploadCompleted callback is unreliable on localhost)
+      const saveRes = await fetch(`/api/jugadores/${jugadorId}/foto`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: blob.url }),
+      });
+      if (!saveRes.ok) {
+        const data = await saveRes.json();
+        throw new Error(data.error ?? "Error al guardar la foto en la base de datos");
+      }
+
       setJugadores((prev) =>
         prev.map((j) => (j.id === jugadorId ? { ...j, fotografia: blob.url } : j))
       );

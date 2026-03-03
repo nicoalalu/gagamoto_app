@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { Trophy, TrendingUp, Calendar, Award } from "lucide-react";
-import AsistenciaButton from "@/components/AsistenciaButton";
 import AsistenciaBanner from "@/components/AsistenciaBanner";
 
 export default async function HomePage() {
@@ -194,17 +193,7 @@ export default async function HomePage() {
             </div>
           )}
 
-          {/* Asistencia al próximo */}
-          {proximoPartido && userId && (
-            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-500">¿Vas al próximo partido?</span>
-              <AsistenciaButton
-                partidoId={proximoPartido.id}
-                initialEstado={miAsistencia as "SI" | "NO" | null}
-                initialJustificacion={miAsistenciaObj?.justificacion ?? null}
-              />
-            </div>
-          )}
+
         </div>
 
         {/* Recent Results */}

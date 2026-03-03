@@ -4,7 +4,7 @@ import { computeStandings, resultadoGagamoto, GAGAMOTO } from "@/lib/constants";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { Trophy, TrendingUp, Calendar } from "lucide-react";
+import { Trophy, TrendingUp, Calendar, Award } from "lucide-react";
 import AsistenciaButton from "@/components/AsistenciaButton";
 
 export default async function HomePage() {
@@ -41,164 +41,223 @@ export default async function HomePage() {
     }))
   );
 
-  const gagPos = standings.findIndex((s) => s.nombre === GAGAMOTO) + 1;
   const gagRow = standings.find((s) => s.nombre === GAGAMOTO);
 
-  // Próximo partido (jugado=false, fecha futura)
-  const proximoPartido = allPartidos.find(
-    (p) =>
-      !p.jugado &&
-      isGagamoto(p) &&
-      p.fecha &&
-      new Date(p.fecha) >= today
-  ) ?? null;
+  // KPI stats
+  const matchesPlayed = gagRow?.pj ?? 0;
+  const wins = gagRow?.pg ?? 0;
+  const draws = gagRow?.pe ?? 0;
+  const losses = gagRow?.pp ?? 0;
+  const goalsScored = gagRow?.gf ?? 0;
+  const goalsConceded = gagRow?.gc ?? 0;
+  const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
 
-  // Mi asistencia al próximo partido
-  const miAsistencia = proximoPartido && userId
-    ? proximoPartido.asistencias.find((a) => a.userId === userId)?.estado ?? null
-    : null;
+  // Próximos partidos (jugado=false, fecha futura)
+  const proximosPartidos = allPartidos
+    .filter((p) => !p.jugado && isGagamoto(p) && p.fecha && new Date(p.fecha) >= today)
+    .slice(0, 3);
 
-  // Últimos 5 partidos jugados por Gagamoto
-  const ultimos5 = allPartidos
+  // Mi asistencia al primer próximo partido
+  const proximoPartido = proximosPartidos[0] ?? null;
+  const miAsistencia =
+    proximoPartido && userId
+      ? proximoPartido.asistencias.find((a) => a.userId === userId)?.estado ?? null
+      : null;
+
+  // Últimos 3 partidos jugados por Gagamoto
+  const ultimos3 = allPartidos
     .filter((p) => p.jugado && isGagamoto(p))
-    .slice(-5)
+    .slice(-3)
     .reverse();
-
-  // Rival del próximo partido
-  const proximoRival = proximoPartido
-    ? proximoPartido.equipo1 === GAGAMOTO
-      ? proximoPartido.equipo2
-      : proximoPartido.equipo1
-    : null;
-  const proximoPosRival = standings.findIndex((s) => s.nombre === proximoRival) + 1;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black flex items-center gap-2">
-            <Trophy className="text-[#0048FF]" size={24} />
-            Inicio
-          </h1>
-          {torneoActivo && (
-            <p className="text-sm text-zinc-500 mt-0.5">{torneoActivo.nombre}</p>
-          )}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {torneoActivo
+            ? torneoActivo.nombre
+            : "Resumen del rendimiento del equipo y próximos partidos"}
+        </p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Matches Played */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Partidos jugados</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{matchesPlayed}</p>
+          </div>
+          <div className="bg-blue-100 rounded-xl p-2.5">
+            <Calendar className="text-blue-500" size={22} />
+          </div>
+        </div>
+
+        {/* Wins */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Victorias</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{wins}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {draws} empates, {losses} derrotas
+            </p>
+          </div>
+          <div className="bg-green-100 rounded-xl p-2.5">
+            <Trophy className="text-green-500" size={22} />
+          </div>
+        </div>
+
+        {/* Goals Scored */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Goles a favor</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{goalsScored}</p>
+            <p className="text-xs text-gray-400 mt-1">{goalsConceded} en contra</p>
+          </div>
+          <div className="bg-yellow-100 rounded-xl p-2.5">
+            <TrendingUp className="text-yellow-500" size={22} />
+          </div>
+        </div>
+
+        {/* Win Rate */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium">Efectividad</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{winRate}%</p>
+          </div>
+          <div className="bg-purple-100 rounded-xl p-2.5">
+            <Award className="text-purple-500" size={22} />
+          </div>
         </div>
       </div>
 
-      {/* KPI strip */}
-      {gagRow && (
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: "Posición", value: gagPos ? `${gagPos}°` : "-" },
-            { label: "Ganados", value: gagRow.pg },
-            { label: "Empatados", value: gagRow.pe },
-            { label: "Perdidos", value: gagRow.pp },
-          ].map((k) => (
-            <div
-              key={k.label}
-              className="bg-[#0048FF] text-white rounded-xl p-4 text-center border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-            >
-              <div className="text-2xl font-black">{k.value}</div>
-              <div className="text-xs font-medium opacity-80">{k.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Two-column section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      {/* Próximo partido */}
-      {proximoPartido && (
-        <div className="border-2 border-black rounded-xl p-5 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <h2 className="font-bold text-sm text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1">
-            <Calendar size={14} /> Próximo partido
-          </h2>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <div className="text-xl font-black">
-                {proximoPartido.equipo1} <span className="text-zinc-400">vs</span>{" "}
-                {proximoPartido.equipo2}
-              </div>
-              {proximoPartido.fecha && (
-                <div className="text-sm text-zinc-500 mt-0.5">
-                  {format(new Date(proximoPartido.fecha), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
-                  {proximoPartido.lugar ? ` · ${proximoPartido.lugar}` : ""}
-                </div>
-              )}
-              {proximoRival && proximoPosRival > 0 && (
-                <div className="text-xs text-zinc-400 mt-0.5">
-                  Rival posición {proximoPosRival}° en tabla
-                </div>
-              )}
+        {/* Upcoming Matches */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Próximos partidos</h2>
+            <Link href="/fixture" className="text-sm text-amber-500 font-medium hover:text-amber-600">
+              Ver todos
+            </Link>
+          </div>
+
+          {proximosPartidos.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Sin partidos próximos</p>
+          ) : (
+            <div className="space-y-3">
+              {proximosPartidos.map((p) => {
+                const rival = p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1;
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/fixture/${p.id}`}
+                    className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">{rival}</p>
+                      {p.fecha && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {format(new Date(p.fecha), "MMM dd, yyyy · HH:mm", { locale: es })}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-amber-500 font-bold text-sm">VS</span>
+                  </Link>
+                );
+              })}
             </div>
-            {userId && (
+          )}
+
+          {/* Asistencia al próximo */}
+          {proximoPartido && userId && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-500">¿Vas al próximo partido?</span>
               <AsistenciaButton
                 partidoId={proximoPartido.id}
                 initialEstado={miAsistencia as "SI" | "NO" | null}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Últimos 5 */}
-      {ultimos5.length > 0 && (
-        <div>
-          <h2 className="font-bold text-sm text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1">
-            <TrendingUp size={14} /> Últimos resultados
-          </h2>
-          <div className="space-y-2">
-            {ultimos5.map((p) => {
-              const r = resultadoGagamoto(p);
-              const rival = p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1;
-              const color =
-                r?.resultado === "G"
-                  ? "bg-green-50 border-green-300"
-                  : r?.resultado === "E"
-                  ? "bg-yellow-50 border-yellow-300"
-                  : "bg-red-50 border-red-300";
-              const badge =
-                r?.resultado === "G"
-                  ? "bg-green-500"
-                  : r?.resultado === "E"
-                  ? "bg-yellow-400"
-                  : "bg-red-500";
-              return (
-                <Link
-                  key={p.id}
-                  href={`/fixture/${p.id}`}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 border ${color} hover:opacity-80 transition-opacity`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`${badge} text-white text-xs font-black w-6 h-6 flex items-center justify-center rounded`}
-                    >
-                      {r?.resultado}
-                    </span>
-                    <span className="font-semibold text-sm">vs {rival}</span>
-                  </div>
-                  <div className="text-sm font-bold">
-                    {r ? `${r.gf} - ${r.gc}` : "-"}
-                  </div>
-                </Link>
-              );
-            })}
+        {/* Recent Results */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Resultados recientes</h2>
+            <Link href="/fixture" className="text-sm text-amber-500 font-medium hover:text-amber-600">
+              Ver todos
+            </Link>
           </div>
+
+          {ultimos3.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Sin resultados aún</p>
+          ) : (
+            <div className="space-y-3">
+              {ultimos3.map((p) => {
+                const r = resultadoGagamoto(p);
+                const rival = p.equipo1 === GAGAMOTO ? p.equipo2 : p.equipo1;
+                const badgeStyle =
+                  r?.resultado === "G"
+                    ? "bg-green-500 text-white"
+                    : r?.resultado === "E"
+                    ? "bg-gray-400 text-white"
+                    : "bg-red-500 text-white";
+                const badgeLabel =
+                  r?.resultado === "G" ? "WIN" : r?.resultado === "E" ? "DRAW" : "LOSS";
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/fixture/${p.id}`}
+                    className="flex flex-col bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-800 text-sm">{rival}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 text-sm">
+                          {r ? `${r.gf} - ${r.gc}` : "-"}
+                        </span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
+                          {badgeLabel}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      {p.fecha && (
+                        <span className="text-xs text-gray-400">
+                          {format(new Date(p.fecha), "MMM dd, yyyy", { locale: es })}
+                        </span>
+                      )}
+                      {p.mvpJugador && (
+                        <span className="text-xs text-amber-500 flex items-center gap-1">
+                          <Award size={11} />
+                          MVP: {p.mvpJugador.nombre}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Tabla de posiciones */}
       {standings.length > 0 && (
-        <div>
-          <h2 className="font-bold text-sm text-zinc-500 uppercase tracking-wider mb-3">
-            Tabla de posiciones
-          </h2>
-          <div className="overflow-x-auto rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Tabla de posiciones</h2>
+          </div>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#0048FF] text-white">
+              <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider">
                 <tr>
                   {["#", "Equipo", "PJ", "PG", "PE", "PP", "GF", "GC", "Pts"].map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-bold">
+                    <th key={h} className="px-4 py-3 text-left font-semibold">
                       {h}
                     </th>
                   ))}
@@ -208,19 +267,21 @@ export default async function HomePage() {
                 {standings.map((s, i) => (
                   <tr
                     key={s.nombre}
-                    className={`border-t border-zinc-200 ${
-                      s.nombre === GAGAMOTO ? "bg-[#EEF3FF] font-bold" : i % 2 === 0 ? "bg-white" : "bg-zinc-50"
-                    } ${s.nombre === proximoRival ? "ring-1 ring-inset ring-[#0048FF]" : ""}`}
+                    className={`border-t border-gray-100 ${
+                      s.nombre === GAGAMOTO
+                        ? "bg-amber-50 font-semibold"
+                        : "hover:bg-gray-50"
+                    }`}
                   >
-                    <td className="px-3 py-2">{i + 1}</td>
-                    <td className="px-3 py-2 font-semibold">{s.nombre}</td>
-                    <td className="px-3 py-2">{s.pj}</td>
-                    <td className="px-3 py-2">{s.pg}</td>
-                    <td className="px-3 py-2">{s.pe}</td>
-                    <td className="px-3 py-2">{s.pp}</td>
-                    <td className="px-3 py-2">{s.gf}</td>
-                    <td className="px-3 py-2">{s.gc}</td>
-                    <td className="px-3 py-2 font-black">{s.pts}</td>
+                    <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{s.nombre}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.pj}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.pg}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.pe}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.pp}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.gf}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.gc}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900">{s.pts}</td>
                   </tr>
                 ))}
               </tbody>
